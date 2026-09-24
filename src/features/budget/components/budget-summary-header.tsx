@@ -1,0 +1,358 @@
+"use client";
+
+import * as React from "react";
+import { BudgetSummary } from "../types/budget.types";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Target,
+  ArrowDownRight,
+  Wallet,
+  PieChart,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
+  CheckCircle2,
+  AlertTriangle,
+  AlertOctagon,
+} from "lucide-react";
+import { MONTH_NAMES } from "@/features/dashboard/stores/dashboard.store";
+
+interface BudgetSummaryHeaderProps {
+  summary: BudgetSummary;
+  selectedMonth: number;
+  selectedYear: number;
+  availableYears?: number[];
+  onSelectMonth: (month: number) => void;
+  onSelectYear?: (year: number) => void;
+  onOpenEditDialog: () => void;
+}
+
+export function BudgetSummaryHeader({
+  summary,
+  selectedMonth,
+  selectedYear,
+  availableYears,
+  onSelectMonth,
+  onSelectYear,
+  onOpenEditDialog,
+}: BudgetSummaryHeaderProps) {
+  const formatCurrency = (val: number) => {
+    return val.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    });
+  };
+
+  const handlePrevMonth = () => {
+    if (selectedMonth > 0) {
+      onSelectMonth(selectedMonth - 1);
+    } else {
+      onSelectMonth(11);
+      if (onSelectYear) onSelectYear(selectedYear - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (selectedMonth < 11) {
+      onSelectMonth(selectedMonth + 1);
+    } else {
+      onSelectMonth(0);
+      if (onSelectYear) onSelectYear(selectedYear + 1);
+    }
+  };
+
+  const currentMonthName = MONTH_NAMES[selectedMonth]?.full || "";
+  const progressWidth = Math.min(Math.max(summary.percentage, 0), 100);
+
+  // Status visual
+  let statusBadge = {
+    label: "Orçamento Sob Controle",
+    variant: "border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    icon: CheckCircle2,
+    barColor: "bg-emerald-500",
+  };
+
+  if (summary.status === "exceeded") {
+    statusBadge = {
+      label: "Teto Geral Ultrapassado",
+      variant: "border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400",
+      icon: AlertOctagon,
+      barColor: "bg-rose-500",
+    };
+  } else if (summary.status === "warning") {
+    statusBadge = {
+      label: "Atenção ao Teto Geral",
+      variant: "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400",
+      icon: AlertTriangle,
+      barColor: "bg-amber-500",
+    };
+  }
+
+  const StatusIcon = statusBadge.icon;
+
+  return (
+    <div className="space-y-4">
+      {/* TÍTULO E CONTROLES DE MÊS */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Orçamento Mensal
+            </h1>
+            <Badge
+              variant="outline"
+              className="border-primary/30 bg-primary/10 text-primary font-medium text-xs px-2.5 py-0.5"
+            >
+              {currentMonthName} / {selectedYear}
+            </Badge>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Planejamento de tetos de gastos por categoria e acompanhamento em tempo real.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {/* SELETOR DE MÊS */}
+          <div className="flex items-center rounded-lg border border-border bg-card p-0.5 shadow-xs">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={handlePrevMonth}
+              title="Mês anterior"
+              className="size-7 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+
+            <Select
+              value={String(selectedMonth)}
+              onValueChange={(val) => onSelectMonth(Number(val))}
+            >
+              <SelectTrigger className="h-7 min-w-[110px] border-0 bg-transparent px-2.5 text-xs font-semibold focus:ring-0">
+                <Calendar className="size-3.5 mr-1.5 text-primary shrink-0" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTH_NAMES.map((m, idx) => (
+                  <SelectItem key={idx} value={String(idx)} className="text-xs">
+                    {m.full}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {onSelectYear && availableYears && (
+              <>
+                <div className="h-3.5 w-px bg-border my-auto mx-0.5" />
+                <Select
+                  value={String(selectedYear)}
+                  onValueChange={(val) => onSelectYear(Number(val))}
+                >
+                  <SelectTrigger className="h-7 w-[76px] border-0 bg-transparent text-xs font-semibold focus:ring-0">
+                    <SelectValue placeholder="Ano" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableYears.map((y) => (
+                      <SelectItem key={y} value={String(y)} className="text-xs">
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </>
+            )}
+
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={handleNextMonth}
+              title="Próximo mês"
+              className="size-7 text-muted-foreground hover:text-foreground"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+
+          {/* BOTÃO PARA EDITAR TODOS OS TETOS */}
+          <Button
+            type="button"
+            size="sm"
+            onClick={onOpenEditDialog}
+            className="text-xs gap-1.5 shadow-xs"
+          >
+            <SlidersHorizontal className="size-3.5" />
+            Estipular Tetos
+          </Button>
+        </div>
+      </div>
+
+      {/* SELETOR DE MÊS EM PILLS (12 MESES) */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+        {MONTH_NAMES.map((m, idx) => {
+          const isSelected = selectedMonth === idx;
+          return (
+            <button
+              key={idx}
+              type="button"
+              onClick={() => onSelectMonth(idx)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
+                isSelected
+                  ? "bg-primary text-primary-foreground shadow-xs font-semibold"
+                  : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              }`}
+            >
+              {m.short}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* CARDS DE KPIS CONSOLIDADOS DO ORÇAMENTO */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* TETO TOTAL ORÇADO */}
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Teto Total Orçado</span>
+              <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+                <Target className="size-4" />
+              </div>
+            </div>
+            <div>
+              <div className="text-xl font-bold tracking-tight text-foreground">
+                {formatCurrency(summary.totalBudget)}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                Soma dos tetos de todas as categorias
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* TOTAL GASTO NO MÊS */}
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">Total Gasto no Mês</span>
+              <div className="rounded-md bg-rose-500/10 p-1.5 text-rose-500">
+                <ArrowDownRight className="size-4" />
+              </div>
+            </div>
+            <div>
+              <div className="text-xl font-bold tracking-tight text-foreground">
+                {formatCurrency(summary.totalSpent)}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                Despesas efetuadas em {currentMonthName}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SALDO RESTANTE DO ORÇAMENTO */}
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">
+                {summary.remainingBudget >= 0 ? "Saldo Restante" : "Orçamento Excedido"}
+              </span>
+              <div
+                className={`rounded-md p-1.5 ${
+                  summary.remainingBudget >= 0
+                    ? "bg-emerald-500/10 text-emerald-500"
+                    : "bg-rose-500/10 text-rose-500"
+                }`}
+              >
+                <Wallet className="size-4" />
+              </div>
+            </div>
+            <div>
+              <div
+                className={`text-xl font-bold tracking-tight ${
+                  summary.remainingBudget >= 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-rose-600 dark:text-rose-400"
+                }`}
+              >
+                {summary.remainingBudget >= 0
+                  ? formatCurrency(summary.remainingBudget)
+                  : `- ${formatCurrency(Math.abs(summary.remainingBudget))}`}
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {summary.remainingBudget >= 0
+                  ? "Ainda disponível dentro dos tetos"
+                  : "Gastos acima da soma dos limites"}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* % COMPROMETIMENTO GERAL */}
+        <Card className="border-border bg-card">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center justify-between text-muted-foreground">
+              <span className="text-xs font-medium">% Comprometido</span>
+              <div className="rounded-md bg-blue-500/10 p-1.5 text-blue-500">
+                <PieChart className="size-4" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xl font-bold tracking-tight text-foreground">
+                  {summary.percentage.toFixed(1)}%
+                </span>
+                <Badge
+                  variant="outline"
+                  className={`text-[10px] font-medium px-1.5 py-0.2 ${statusBadge.variant}`}
+                >
+                  <StatusIcon className="size-2.5 mr-1" />
+                  {statusBadge.label}
+                </Badge>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {summary.exceededCategoriesCount > 0
+                  ? `${summary.exceededCategoriesCount} categoria(s) estourada(s)`
+                  : summary.warningCategoriesCount > 0
+                  ? `${summary.warningCategoriesCount} categoria(s) em alerta`
+                  : "Todas as categorias sob controle"}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* BARRA GLOBAL DE CONSUMO DO ORÇAMENTO */}
+      <Card className="border-border bg-card/60 backdrop-blur-xs">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-foreground flex items-center gap-2">
+              <span>Consumo Global do Orçamento</span>
+              <Badge variant="secondary" className="text-[10px] font-normal py-0">
+                {formatCurrency(summary.totalSpent)} de {formatCurrency(summary.totalBudget)}
+              </Badge>
+            </span>
+            <span className="font-bold text-foreground">{summary.percentage.toFixed(1)}%</span>
+          </div>
+          <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ease-out ${statusBadge.barColor}`}
+              style={{ width: `${progressWidth}%` }}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

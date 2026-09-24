@@ -1,0 +1,106 @@
+"use client";
+
+import * as React from "react";
+import { MonthData } from "../types/dashboard.types";
+import { formatCurrency } from "../lib/financial-math";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+
+interface MonthlyTableProps {
+  months: MonthData[];
+  year: number;
+  selectedMonth?: number;
+  onSelectMonth?: (monthIndex: number) => void;
+}
+
+export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: MonthlyTableProps) {
+  return (
+    <Card className="border-border bg-card">
+      <CardHeader>
+        <CardTitle className="text-base font-semibold text-foreground">
+          Detalhamento Mês a Mês ({year})
+        </CardTitle>
+        <CardDescription className="text-xs text-muted-foreground">
+          Valores consolidados de receitas, despesas e balanço líquido mensal. Clique na linha de um mês para selecioná-lo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead>
+              <tr className="border-b border-border text-muted-foreground">
+                <th className="pb-3 font-medium">Mês</th>
+                <th className="pb-3 font-medium">Receitas</th>
+                <th className="pb-3 font-medium">Gastos</th>
+                <th className="pb-3 font-medium">Saldo do Mês</th>
+                <th className="pb-3 font-medium text-right">Resultado</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {months.map((m) => {
+                const isPositive = m.balance >= 0;
+                const isSelected = selectedMonth === m.monthIndex;
+
+                return (
+                  <tr
+                    key={m.monthIndex}
+                    onClick={() => onSelectMonth?.(m.monthIndex)}
+                    className={`transition-colors ${
+                      isSelected
+                        ? "bg-primary/10 hover:bg-primary/15 font-semibold"
+                        : "hover:bg-muted/40"
+                    } ${onSelectMonth ? "cursor-pointer" : ""}`}
+                    title="Clique para selecionar este mês"
+                  >
+                    <td className="py-3 font-medium text-foreground">
+                      <div className="flex items-center gap-2">
+                        {isSelected && <span className="size-1.5 rounded-full bg-primary shrink-0" />}
+                        <span>{m.monthFullName}</span>
+                        {isSelected && (
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                            Selecionado
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-3 text-foreground font-mono">
+                      {formatCurrency(m.income)}
+                    </td>
+                    <td className="py-3 text-foreground font-mono">
+                      {formatCurrency(m.expenses)}
+                    </td>
+                    <td className="py-3 font-mono">
+                      <span className={`font-semibold ${isPositive ? "text-primary" : "text-destructive"}`}>
+                        {formatCurrency(m.balance)}
+                      </span>
+                    </td>
+                    <td className="py-3 text-right">
+                      {isPositive ? (
+                        <Badge
+                          variant="outline"
+                          className="border-primary/30 bg-primary/10 text-primary gap-1"
+                        >
+                          <ArrowUpRight className="size-3" />
+                          Superávit
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="border-destructive/30 bg-destructive/10 text-destructive gap-1"
+                        >
+                          <ArrowDownRight className="size-3" />
+                          Déficit
+                        </Badge>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
