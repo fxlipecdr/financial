@@ -12,6 +12,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    if (!payload.model || payload.model.includes("2.0") || payload.model.includes("1.5") || payload.model.includes("2.5") || !payload.model.startsWith("gemini-3")) {
+      payload.model = "gemini-3.8-flash";
+    }
+
     const result = await GeminiAdvisorService.generateAdvice(payload);
 
     return NextResponse.json(result);

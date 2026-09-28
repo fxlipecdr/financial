@@ -126,7 +126,12 @@ DIRETRIZES DE RESPOSTA:
     try {
       const client = new GoogleGenAI({ apiKey, vertexai: false });
       let targetModel = model || "gemini-3.8-flash";
-      if (targetModel.includes("2.0") || targetModel.includes("1.5") || targetModel.includes("2.5")) {
+      if (
+        targetModel.includes("2.0") ||
+        targetModel.includes("1.5") ||
+        targetModel.includes("2.5") ||
+        !targetModel.startsWith("gemini-3")
+      ) {
         targetModel = "gemini-3.8-flash";
       }
 
@@ -200,8 +205,13 @@ DIRETRIZES DE RESPOSTA:
       process.env.GEMINI_MODEL ||
       "gemini-3.8-flash";
 
-    // Substituição automática de modelos legados depreciados
-    if (requestedModel.includes("2.0") || requestedModel.includes("1.5") || requestedModel.includes("2.5")) {
+    // Substituição automática e forçada de qualquer modelo legado
+    if (
+      requestedModel.includes("2.0") ||
+      requestedModel.includes("1.5") ||
+      requestedModel.includes("2.5") ||
+      !requestedModel.startsWith("gemini-3")
+    ) {
       requestedModel = "gemini-3.8-flash";
     }
 
