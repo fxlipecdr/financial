@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
       !payload.model ||
       payload.model.includes("2.0") ||
       payload.model.includes("1.5") ||
-      payload.model.includes("3.8") ||
+      payload.model.includes("3.5-flash-lite") ||
       !payload.model.startsWith("gemini-")
     ) {
-      payload.model = "gemini-2.5-flash";
+      payload.model = "gemini-3.7-flash";
     }
 
     const result = await GeminiAdvisorService.generateAdvice(payload);

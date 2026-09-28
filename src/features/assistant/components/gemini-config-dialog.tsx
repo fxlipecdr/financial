@@ -35,14 +35,15 @@ import {
 
 export const LOCAL_STORAGE_GEMINI_KEY = "financial_gemini_api_key";
 export const LOCAL_STORAGE_GEMINI_MODEL = "financial_gemini_model";
-export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash";
 
 export const AVAILABLE_GEMINI_MODELS = [
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Mais Recomendado - Máxima Estabilidade e Sem Filas)" },
-  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Última Geração - Raciocínio Híbrido)" },
-  { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (Alta Capacidade e Rapidez)" },
-  { id: "gemini-2.5-flash-lite", label: "Gemini 2.5 Flash-Lite (Econômico e Rápido)" },
-  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Leve - Sujeito a filas temporárias 503)" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Mais Recomendado - Alta Disponibilidade e Sem Filas)" },
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Frontier Model - Mais Recente)" },
+  { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (Versão Estável Rápida)" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Versão Consolidada)" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite (Econômico e Rápido)" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Leve - Sujeito a filas 503)" },
 ];
 
 interface GeminiConfigDialogProps {
@@ -71,11 +72,11 @@ export function GeminiConfigDialog({
       const savedKey = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY) || "";
       let savedModel = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
       
-      // Migração automática de modelos antigos depreciados (2.0 / 1.5 / 3.8)
+      // Migração automática de modelos antigos ou com instabilidade crônica de fila 503
       if (
         savedModel.includes("2.0") ||
         savedModel.includes("1.5") ||
-        savedModel.includes("3.8") ||
+        savedModel.includes("3.5-flash-lite") ||
         !savedModel.startsWith("gemini-")
       ) {
         savedModel = DEFAULT_GEMINI_MODEL;
@@ -220,7 +221,7 @@ export function GeminiConfigDialog({
               </SelectContent>
             </Select>
             <p className="text-[11px] text-muted-foreground">
-              Recomendamos o <strong>Gemini 2.5 Flash</strong> pela máxima estabilidade e ausência de filas (503) na API gratuita.
+              Recomendamos o <strong>Gemini 3.7 Flash</strong> pela velocidade, alta capacidade e ausência de filas (503) na API gratuita.
             </p>
           </div>
 

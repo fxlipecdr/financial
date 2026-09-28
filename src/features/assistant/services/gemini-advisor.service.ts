@@ -135,18 +135,18 @@ DIRETRIZES DE RESPOSTA:
    */
   async testConnection(
     apiKey: string,
-    model: string = "gemini-2.5-flash"
+    model: string = "gemini-3.7-flash"
   ): Promise<{ success: boolean; model: string; message: string }> {
     try {
       const client = new GoogleGenAI({ apiKey, vertexai: false });
-      let targetModel = model || "gemini-2.5-flash";
+      let targetModel = model || "gemini-3.7-flash";
       if (
         targetModel.includes("2.0") ||
         targetModel.includes("1.5") ||
-        targetModel.includes("3.8") ||
+        targetModel.includes("3.5-flash-lite") ||
         !targetModel.startsWith("gemini-")
       ) {
-        targetModel = "gemini-2.5-flash";
+        targetModel = "gemini-3.7-flash";
       }
 
       // 1. Tenta listar modelos para autenticar a chave e obter os modelos ativos na conta
@@ -179,22 +179,47 @@ DIRETRIZES DE RESPOSTA:
         }
       }
 
-      // 2. Lista de modelos candidatos priorizando os confirmados na conta
+      // 2. Lista de modelos candidatos priorizando os mais estáveis e com maior disponibilidade
       const candidateModels = Array.from(
         new Set([
           targetModel,
-          ...availableModels.filter((name) => name.includes("flash") && !name.includes("preview")),
-          "gemini-2.5-flash",
+          ...availableModels.filter((name) => name.includes("flash") && !name.includes("lite") && !name.includes("preview")),
           "gemini-3.7-flash",
+          "gemini-3.8-flash",
           "gemini-3.5-flash",
-          "gemini-2.5-flash-lite",
-          "gemini-3.5-flash-lite",
+          "gemini-2.5-flash",
+          "gemini-3.1-flash-lite",
         ])
       );
 
       let lastError: any = null;
 
       for (const m of candidateModels) {
+        // Tenta primeiro via Interactions API (recomendado pelo Google)
+        try {
+          const interaction = await client.interactions.create({
+            model: m,
+            input: "Responda apenas com a palavra: 'Conexão OK'",
+          });
+          if (interaction && interaction.output_text) {
+            return {
+              success: true,
+              model: m,
+              message: `Conexão bem-sucedida! O modelo ${m} respondeu perfeitamente via Interactions API.`,
+            };
+          }
+        } catch (intErr: any) {
+          const cleanMsg = extractCleanErrorMessage(intErr);
+          if (cleanMsg.includes("API_KEY_INVALID") || cleanMsg.includes("API key not valid")) {
+            return {
+              success: false,
+              model: m,
+              message: "Chave de API inválida. Verifique sua chave no Google AI Studio.",
+            };
+          }
+        }
+
+        // Fallback para generateContent
         try {
           const res = await client.models.generateContent({
             model: m,
@@ -220,7 +245,6 @@ DIRETRIZES DE RESPOSTA:
             };
           }
 
-          // Se for 503 (alta demanda) ou 404, continua para o próximo modelo candidato
           continue;
         }
       }
@@ -259,27 +283,27 @@ DIRETRIZES DE RESPOSTA:
     let requestedModel =
       (payload.model && payload.model.trim()) ||
       process.env.GEMINI_MODEL ||
-      "gemini-2.5-flash";
+      "gemini-3.7-flash";
 
-    // Substituição automática e forçada de qualquer modelo legado descontinuado
+    // Substituição automática de modelos legados ou com congestionamento frequente
     if (
       requestedModel.includes("2.0") ||
       requestedModel.includes("1.5") ||
-      requestedModel.includes("3.8") ||
+      requestedModel.includes("3.5-flash-lite") ||
       !requestedModel.startsWith("gemini-")
     ) {
-      requestedModel = "gemini-2.5-flash";
+      requestedModel = "gemini-3.7-flash";
     }
 
-    // Lista de modelos candidatos para failover automático com prioridade em estabilidade
+    // Lista de modelos candidatos para failover automático com prioridade em alta disponibilidade (evitando lite 503)
     const candidateModels = Array.from(
       new Set([
         requestedModel,
-        "gemini-2.5-flash",
         "gemini-3.7-flash",
+        "gemini-3.8-flash",
         "gemini-3.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-3.1-flash-lite",
       ])
     );
 
@@ -295,9 +319,43 @@ DIRETRIZES DE RESPOSTA:
 
         const contents = this.buildGeminiContents(history, message);
 
+        // Prepara histórico em formato de texto para a Interactions API
+        const inputPrompt = history && history.length > 0
+          ? `${history.map((h) => `${h.role === "user" ? "Usuário" : "Assistente"}: ${h.content}`).join("\n\n")}\n\nUsuário: ${message}`
+          : message;
+
         let lastError: any = null;
 
         for (const model of candidateModels) {
+          // 1. Tenta primeiro via Interactions API (recomendado oficialmente pelo Google para a linha Gemini 3)
+          try {
+            const interaction = await client.interactions.create({
+              model,
+              input: inputPrompt,
+              system_instruction: systemInstruction,
+            });
+
+            if (interaction && interaction.output_text) {
+              return {
+                reply: interaction.output_text.trim(),
+                provider: "gemini",
+                modelUsed: `${model} (Interactions API)`,
+              };
+            }
+          } catch (interactionErr: any) {
+            const intMsg = extractCleanErrorMessage(interactionErr);
+            console.warn(`[GeminiAdvisor] Interactions API falhou com modelo ${model}:`, intMsg);
+
+            if (intMsg.includes("API_KEY_INVALID") || intMsg.includes("API key not valid") || intMsg.includes("401") || intMsg.includes("403")) {
+              return {
+                reply: `⚠️ **Chave de API Inválida:** O Google recusou a autenticação da chave (${intMsg}). Verifique se copiou a chave correta no Google AI Studio.`,
+                provider: "fallback",
+                errorDetail: intMsg,
+              };
+            }
+          }
+
+          // 2. Tenta via models.generateContent (fallback de compatibilidade)
           try {
             const response = await client.models.generateContent({
               model,
@@ -317,7 +375,7 @@ DIRETRIZES DE RESPOSTA:
           } catch (err: any) {
             lastError = err;
             const cleanMsg = extractCleanErrorMessage(err);
-            console.warn(`[GeminiAdvisor] Falha com modelo "${model}":`, cleanMsg);
+            console.warn(`[GeminiAdvisor] generateContent falhou com modelo "${model}":`, cleanMsg);
 
             // Se for erro de chave inválida ou permissão negada, interrompe tentativas
             if (
@@ -333,13 +391,13 @@ DIRETRIZES DE RESPOSTA:
               };
             }
 
-            // Se for pico de demanda (503 UNAVAILABLE) ou rate limit (429), pula imediatamente para o próximo modelo na fila de contingência
+            // Se for pico de demanda (503 UNAVAILABLE) ou rate limit (429), aguarda brevemente e tenta o próximo modelo
             if (cleanMsg.includes("503") || cleanMsg.includes("UNAVAILABLE") || cleanMsg.includes("429")) {
-              console.info(`[GeminiAdvisor] Modelo ${model} congestionado. Alternando automaticamente para o próximo modelo de alta disponibilidade...`);
+              console.info(`[GeminiAdvisor] Modelo ${model} congestionado. Alternando automaticamente para o próximo modelo de contingência...`);
+              await new Promise((r) => setTimeout(r, 400));
               continue;
             }
 
-            // Outros erros (ex: 404 modelo não suportado), vai para o próximo modelo candidato
             continue;
           }
         }

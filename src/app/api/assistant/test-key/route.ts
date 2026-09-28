@@ -12,14 +12,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    let targetModel = (model && typeof model === "string") ? model.trim() : "gemini-2.5-flash";
+    let targetModel = (model && typeof model === "string") ? model.trim() : "gemini-3.7-flash";
     if (
       targetModel.includes("2.0") ||
       targetModel.includes("1.5") ||
-      targetModel.includes("3.8") ||
+      targetModel.includes("3.5-flash-lite") ||
       !targetModel.startsWith("gemini-")
     ) {
-      targetModel = "gemini-2.5-flash";
+      targetModel = "gemini-3.7-flash";
     }
 
     const result = await GeminiAdvisorService.testConnection(
