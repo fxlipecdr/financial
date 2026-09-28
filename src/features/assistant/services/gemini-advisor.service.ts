@@ -183,12 +183,13 @@ DIRETRIZES DE RESPOSTA:
       const candidateModels = Array.from(
         new Set([
           targetModel,
-          ...availableModels.filter((name) => name.includes("flash") && !name.includes("lite") && !name.includes("preview")),
           "gemini-3.7-flash",
-          "gemini-3.8-flash",
-          "gemini-3.5-flash",
+          "gemini-3.1-pro-preview",
+          "gemini-3-flash-preview",
+          "gemini-3-pro-preview",
           "gemini-2.5-flash",
-          "gemini-3.1-flash-lite",
+          "gemini-2.5-pro",
+          ...availableModels.filter((name) => !name.includes("lite")),
         ])
       );
 
@@ -289,21 +290,25 @@ DIRETRIZES DE RESPOSTA:
     if (
       requestedModel.includes("2.0") ||
       requestedModel.includes("1.5") ||
+      requestedModel.includes("3.8") ||
       requestedModel.includes("3.5-flash-lite") ||
+      requestedModel === "gemini-3.5-flash" ||
       !requestedModel.startsWith("gemini-")
     ) {
       requestedModel = "gemini-3.7-flash";
     }
 
-    // Lista de modelos candidatos para failover automático com prioridade em alta disponibilidade (evitando lite 503)
+    // Lista de modelos candidatos para failover automático com prioridade em alta disponibilidade
+    // Inclui Pro models (gemini-3.1-pro-preview e gemini-3-pro-preview) que usam pools de hardware independentes
     const candidateModels = Array.from(
       new Set([
         requestedModel,
         "gemini-3.7-flash",
-        "gemini-3.8-flash",
-        "gemini-3.5-flash",
+        "gemini-3.1-pro-preview",
+        "gemini-3-flash-preview",
+        "gemini-3-pro-preview",
         "gemini-2.5-flash",
-        "gemini-3.1-flash-lite",
+        "gemini-2.5-pro",
       ])
     );
 
@@ -343,6 +348,7 @@ DIRETRIZES DE RESPOSTA:
               };
             }
           } catch (interactionErr: any) {
+            lastError = interactionErr;
             const intMsg = extractCleanErrorMessage(interactionErr);
             console.warn(`[GeminiAdvisor] Interactions API falhou com modelo ${model}:`, intMsg);
 

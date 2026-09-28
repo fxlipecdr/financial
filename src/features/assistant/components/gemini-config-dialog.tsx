@@ -38,12 +38,13 @@ export const LOCAL_STORAGE_GEMINI_MODEL = "financial_gemini_model";
 export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash";
 
 export const AVAILABLE_GEMINI_MODELS = [
-  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Mais Recomendado - Alta Disponibilidade e Sem Filas)" },
-  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Frontier Model - Mais Recente)" },
-  { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (Versão Estável Rápida)" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Versão Consolidada)" },
-  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite (Econômico e Rápido)" },
-  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Leve - Sujeito a filas 503)" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Recomendado - Mais Rápido e Estável)" },
+  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (Alta Capacidade e Sem Filas 503)" },
+  { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview (Alternativa Ágil)" },
+  { id: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview (Raciocínio Avançado)" },
+  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Versão Clássica)" },
+  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Versão Clássica Robusta)" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite (Econômico - Sujeito a fila 503)" },
 ];
 
 interface GeminiConfigDialogProps {
@@ -76,7 +77,9 @@ export function GeminiConfigDialog({
       if (
         savedModel.includes("2.0") ||
         savedModel.includes("1.5") ||
+        savedModel.includes("3.8") ||
         savedModel.includes("3.5-flash-lite") ||
+        savedModel === "gemini-3.5-flash" ||
         !savedModel.startsWith("gemini-")
       ) {
         savedModel = DEFAULT_GEMINI_MODEL;
