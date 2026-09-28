@@ -121,53 +121,56 @@ DIRETRIZES DE RESPOSTA:
    */
   async testConnection(
     apiKey: string,
-    model: string = "gemini-3.8-flash"
+    model: string = "gemini-2.5-flash"
   ): Promise<{ success: boolean; model: string; message: string }> {
     try {
       const client = new GoogleGenAI({ apiKey, vertexai: false });
-      let targetModel = model || "gemini-3.8-flash";
+      let targetModel = model || "gemini-2.5-flash";
       if (
         targetModel.includes("2.0") ||
         targetModel.includes("1.5") ||
-        targetModel.includes("2.5") ||
-        !targetModel.startsWith("gemini-3")
+        targetModel.includes("3.8") ||
+        !targetModel.startsWith("gemini-")
       ) {
-        targetModel = "gemini-3.8-flash";
+        targetModel = "gemini-2.5-flash";
       }
 
       const candidateModels = Array.from(
         new Set([
           targetModel,
-          "gemini-3.8-flash",
+          "gemini-2.5-flash",
           "gemini-3.7-flash",
-          "gemini-flash-latest",
+          "gemini-3.5-flash",
+          "gemini-2.5-flash-lite",
           "gemini-3.5-flash-lite",
         ])
       );
 
       for (const m of candidateModels) {
-        for (let attempt = 0; attempt < 2; attempt++) {
-          try {
-            const res = await client.models.generateContent({
+        try {
+          const res = await client.models.generateContent({
+            model: m,
+            contents: "Responda apenas com a palavra: 'Conexão OK'",
+          });
+          if (res && res.text) {
+            return {
+              success: true,
               model: m,
-              contents: "Responda apenas com a palavra: 'Conexão OK'",
-            });
-            if (res && res.text) {
-              return {
-                success: true,
-                model: m,
-                message: res.text.trim(),
-              };
-            }
-          } catch (e: any) {
-            const msg = String(e?.message || "");
-            console.warn(`[GeminiAdvisor.testConnection] Falha com modelo ${m} (tentativa ${attempt + 1}):`, msg);
-            if (msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("429")) {
-              await new Promise((r) => setTimeout(r, 1000));
-              continue;
-            }
-            break;
+              message: res.text.trim(),
+            };
           }
+        } catch (e: any) {
+          const msg = String(e?.message || "");
+          console.warn(`[GeminiAdvisor.testConnection] Falha com modelo ${m}:`, msg);
+          if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
+            return {
+              success: false,
+              model: m,
+              message: "Chave de API inválida ou sem permissão. Verifique sua chave no Google AI Studio.",
+            };
+          }
+          // Em caso de 503 (alta demanda) ou 404, continua para o próximo modelo candidato
+          continue;
         }
       }
 
@@ -203,25 +206,26 @@ DIRETRIZES DE RESPOSTA:
     let requestedModel =
       (payload.model && payload.model.trim()) ||
       process.env.GEMINI_MODEL ||
-      "gemini-3.8-flash";
+      "gemini-2.5-flash";
 
-    // Substituição automática e forçada de qualquer modelo legado
+    // Substituição automática e forçada de qualquer modelo legado descontinuado
     if (
       requestedModel.includes("2.0") ||
       requestedModel.includes("1.5") ||
-      requestedModel.includes("2.5") ||
-      !requestedModel.startsWith("gemini-3")
+      requestedModel.includes("3.8") ||
+      !requestedModel.startsWith("gemini-")
     ) {
-      requestedModel = "gemini-3.8-flash";
+      requestedModel = "gemini-2.5-flash";
     }
 
-    // Lista de modelos candidatos para failover automático (priorizando os de maior disponibilidade)
+    // Lista de modelos candidatos para failover automático com prioridade em estabilidade
     const candidateModels = Array.from(
       new Set([
         requestedModel,
-        "gemini-3.8-flash",
+        "gemini-2.5-flash",
         "gemini-3.7-flash",
-        "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-2.5-flash-lite",
         "gemini-3.5-flash-lite",
       ])
     );
@@ -241,50 +245,45 @@ DIRETRIZES DE RESPOSTA:
         let lastError: any = null;
 
         for (const model of candidateModels) {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try {
-              const response = await client.models.generateContent({
-                model,
-                contents,
-                config: {
-                  systemInstruction,
-                  temperature: 0.7,
-                },
-              });
+          try {
+            const response = await client.models.generateContent({
+              model,
+              contents,
+              config: {
+                systemInstruction,
+                temperature: 0.7,
+              },
+            });
 
-              if (response && response.text) {
-                return {
-                  reply: response.text.trim(),
-                  provider: "gemini",
-                  modelUsed: model,
-                };
-              }
-            } catch (err: any) {
-              lastError = err;
-              const msg = String(err?.message || "");
-              console.warn(
-                `[GeminiAdvisor] Tentativa ${attempt + 1} com modelo "${model}" falhou:`,
-                msg
-              );
-
-              // Se for erro de chave inválida ou permissão negada, interrompe tentativas
-              if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
-                return {
-                  reply: `⚠️ **Chave de API Inválida:** O Google recusou a autenticação da chave. Verifique se copiou a chave correta no Google AI Studio.`,
-                  provider: "fallback",
-                  errorDetail: msg,
-                };
-              }
-
-              // Se for pico temporário de demanda (503) ou rate limit (429), aguarda antes de tentar novamente
-              if (msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("429")) {
-                await new Promise((r) => setTimeout(r, 1200));
-                continue;
-              }
-
-              // Outros erros (ex: 404), vai para o próximo modelo candidato imediatamente
-              break;
+            if (response && response.text) {
+              return {
+                reply: response.text.trim(),
+                provider: "gemini",
+                modelUsed: model,
+              };
             }
+          } catch (err: any) {
+            lastError = err;
+            const msg = String(err?.message || "");
+            console.warn(`[GeminiAdvisor] Falha com modelo "${model}":`, msg);
+
+            // Se for erro de chave inválida ou permissão negada, interrompe tentativas
+            if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
+              return {
+                reply: `⚠️ **Chave de API Inválida:** O Google recusou a autenticação da chave. Verifique se copiou a chave correta no Google AI Studio.`,
+                provider: "fallback",
+                errorDetail: msg,
+              };
+            }
+
+            // Se for pico de demanda (503 UNAVAILABLE) ou rate limit (429), pula imediatamente para o próximo modelo na fila de contingência
+            if (msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("429")) {
+              console.info(`[GeminiAdvisor] Modelo ${model} congestionado. Alternando automaticamente para o próximo modelo de alta disponibilidade...`);
+              continue;
+            }
+
+            // Outros erros (ex: 404 modelo não suportado), vai para o próximo modelo candidato
+            continue;
           }
         }
 

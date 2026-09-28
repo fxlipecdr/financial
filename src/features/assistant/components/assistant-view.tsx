@@ -92,7 +92,12 @@ Como posso te ajudar hoje? Você pode clicar em uma das sugestões abaixo ou me 
   React.useEffect(() => {
     const key = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY);
     let model = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
-    if (model.includes("2.0") || model.includes("1.5") || model.includes("2.5")) {
+    if (
+      model.includes("2.0") ||
+      model.includes("1.5") ||
+      model.includes("3.8") ||
+      !model.startsWith("gemini-")
+    ) {
       model = DEFAULT_GEMINI_MODEL;
       localStorage.setItem(LOCAL_STORAGE_GEMINI_MODEL, DEFAULT_GEMINI_MODEL);
     }

@@ -12,8 +12,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!payload.model || payload.model.includes("2.0") || payload.model.includes("1.5") || payload.model.includes("2.5") || !payload.model.startsWith("gemini-3")) {
-      payload.model = "gemini-3.8-flash";
+    if (
+      !payload.model ||
+      payload.model.includes("2.0") ||
+      payload.model.includes("1.5") ||
+      payload.model.includes("3.8") ||
+      !payload.model.startsWith("gemini-")
+    ) {
+      payload.model = "gemini-2.5-flash";
     }
 
     const result = await GeminiAdvisorService.generateAdvice(payload);
