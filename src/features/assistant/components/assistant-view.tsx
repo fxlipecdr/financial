@@ -91,7 +91,11 @@ Como posso te ajudar hoje? Você pode clicar em uma das sugestões abaixo ou me 
   // Carrega configuração salva ao montar
   React.useEffect(() => {
     const key = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY);
-    const model = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+    let model = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+    if (model.includes("2.0") || model.includes("1.5") || model.includes("2.5")) {
+      model = DEFAULT_GEMINI_MODEL;
+      localStorage.setItem(LOCAL_STORAGE_GEMINI_MODEL, DEFAULT_GEMINI_MODEL);
+    }
     setGeminiConfig({
       hasKey: Boolean(key && key.trim()),
       model,

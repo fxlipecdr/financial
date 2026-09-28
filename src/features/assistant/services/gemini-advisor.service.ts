@@ -121,12 +121,17 @@ DIRETRIZES DE RESPOSTA:
    */
   async testConnection(
     apiKey: string,
-    model: string = "gemini-2.0-flash"
+    model: string = "gemini-3.5-flash-lite"
   ): Promise<{ success: boolean; model: string; message: string }> {
     try {
       const client = new GoogleGenAI({ apiKey, vertexai: false });
+      let targetModel = model || "gemini-3.5-flash-lite";
+      if (targetModel.includes("2.0") || targetModel.includes("1.5") || targetModel.includes("2.5")) {
+        targetModel = "gemini-3.5-flash-lite";
+      }
+
       const candidateModels = Array.from(
-        new Set([model, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"])
+        new Set([targetModel, "gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.1-flash-lite"])
       );
 
       for (const m of candidateModels) {
@@ -149,7 +154,7 @@ DIRETRIZES DE RESPOSTA:
 
       return {
         success: false,
-        model,
+        model: targetModel,
         message:
           "Nenhum modelo do Gemini respondeu com a chave fornecida. Verifique se a chave do Google AI Studio está correta e ativa.",
       };
@@ -176,19 +181,24 @@ DIRETRIZES DE RESPOSTA:
       process.env.GOOGLE_API_KEY ||
       process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
-    const requestedModel =
+    let requestedModel =
       (payload.model && payload.model.trim()) ||
       process.env.GEMINI_MODEL ||
-      "gemini-2.0-flash";
+      "gemini-3.5-flash-lite";
+
+    // Substituição automática de modelos legados depreciados
+    if (requestedModel.includes("2.0") || requestedModel.includes("1.5") || requestedModel.includes("2.5")) {
+      requestedModel = "gemini-3.5-flash-lite";
+    }
 
     // Lista de modelos candidatos para failover automático
     const candidateModels = Array.from(
       new Set([
         requestedModel,
-        "gemini-2.0-flash",
-        "gemini-1.5-flash",
-        "gemini-2.5-flash",
-        "gemini-2.0-flash-lite",
+        "gemini-3.5-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.1-flash-lite",
       ])
     );
 

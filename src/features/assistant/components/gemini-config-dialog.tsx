@@ -35,13 +35,13 @@ import {
 
 export const LOCAL_STORAGE_GEMINI_KEY = "financial_gemini_api_key";
 export const LOCAL_STORAGE_GEMINI_MODEL = "financial_gemini_model";
-export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 export const AVAILABLE_GEMINI_MODELS = [
-  { id: "gemini-2.0-flash", label: "Gemini 2.0 Flash (Mais recente e rápido - Recomendado)" },
-  { id: "gemini-1.5-flash", label: "Gemini 1.5 Flash (Alta estabilidade e cota generosa)" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-  { id: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite (Ultra leve)" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Recomendado pelo Google - Rápido e gratuito)" },
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Mais inteligente e balanceado)" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
 ];
 
 interface GeminiConfigDialogProps {
@@ -64,11 +64,18 @@ export function GeminiConfigDialog({
     message: string;
   } | null>(null);
 
-  // Carregar dados salvos ao abrir
+  // Carregar dados salvos ao abrir (migrando modelos legados se necessário)
   React.useEffect(() => {
     if (open) {
       const savedKey = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY) || "";
-      const savedModel = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+      let savedModel = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+      
+      // Migração automática de modelos antigos depreciados (2.0 / 1.5 / 2.5)
+      if (savedModel.includes("2.0") || savedModel.includes("1.5") || savedModel.includes("2.5")) {
+        savedModel = DEFAULT_GEMINI_MODEL;
+        localStorage.setItem(LOCAL_STORAGE_GEMINI_MODEL, DEFAULT_GEMINI_MODEL);
+      }
+
       setApiKey(savedKey);
       setModel(savedModel);
       setTestResult(null);
