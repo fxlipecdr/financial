@@ -35,12 +35,13 @@ import {
 
 export const LOCAL_STORAGE_GEMINI_KEY = "financial_gemini_api_key";
 export const LOCAL_STORAGE_GEMINI_MODEL = "financial_gemini_model";
-export const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 
 export const AVAILABLE_GEMINI_MODELS = [
-  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Recomendado pelo Google - Rápido e gratuito)" },
-  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Mais inteligente e balanceado)" },
-  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash" },
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Mais Recomendado - Sem filas e alta capacidade)" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Excelente estabilidade)" },
+  { id: "gemini-flash-latest", label: "Gemini Flash Latest (Última versão estável)" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash Lite (Rápido e leve - Sujeito a picos temporários)" },
   { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash Lite" },
 ];
 
