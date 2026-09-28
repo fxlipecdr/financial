@@ -18,6 +18,20 @@ export interface ChatResponseResult {
   errorDetail?: string;
 }
 
+function extractCleanErrorMessage(err: any): string {
+  const raw = String(err?.message || err || "");
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (parsed?.error?.message) {
+        return parsed.error.message;
+      }
+    }
+  } catch {}
+  return raw;
+}
+
 export const GeminiAdvisorService = {
   /**
    * Constrói o histórico formatado para a API do Google Gemini.
@@ -135,9 +149,41 @@ DIRETRIZES DE RESPOSTA:
         targetModel = "gemini-2.5-flash";
       }
 
+      // 1. Tenta listar modelos para autenticar a chave e obter os modelos ativos na conta
+      let availableModels: string[] = [];
+      try {
+        const pager = await client.models.list({ config: { pageSize: 50 } });
+        if (pager && pager.page) {
+          availableModels = pager.page
+            .map((m) => (m.name || "").replace(/^models\//, ""))
+            .filter((name) => name.length > 0);
+        }
+      } catch (listErr: any) {
+        const cleanMsg = extractCleanErrorMessage(listErr);
+        console.warn("[GeminiAdvisor.testConnection] Falha ao listar modelos:", cleanMsg);
+
+        if (cleanMsg.includes("API_KEY_INVALID") || cleanMsg.includes("API key not valid")) {
+          return {
+            success: false,
+            model: targetModel,
+            message: "Chave de API inválida. Verifique se copiou a chave correta no Google AI Studio (aistudio.google.com).",
+          };
+        }
+
+        if (cleanMsg.includes("PERMISSION_DENIED") || cleanMsg.includes("403")) {
+          return {
+            success: false,
+            model: targetModel,
+            message: `Acesso negado (403): ${cleanMsg}. Verifique as permissões da chave ou restrições de IP/projeto.`,
+          };
+        }
+      }
+
+      // 2. Lista de modelos candidatos priorizando os confirmados na conta
       const candidateModels = Array.from(
         new Set([
           targetModel,
+          ...availableModels.filter((name) => name.includes("flash") && !name.includes("preview")),
           "gemini-2.5-flash",
           "gemini-3.7-flash",
           "gemini-3.5-flash",
@@ -145,6 +191,8 @@ DIRETRIZES DE RESPOSTA:
           "gemini-3.5-flash-lite",
         ])
       );
+
+      let lastError: any = null;
 
       for (const m of candidateModels) {
         try {
@@ -156,35 +204,40 @@ DIRETRIZES DE RESPOSTA:
             return {
               success: true,
               model: m,
-              message: res.text.trim(),
+              message: `Conexão bem-sucedida! O modelo ${m} respondeu perfeitamente.`,
             };
           }
         } catch (e: any) {
-          const msg = String(e?.message || "");
-          console.warn(`[GeminiAdvisor.testConnection] Falha com modelo ${m}:`, msg);
-          if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
+          lastError = e;
+          const cleanMsg = extractCleanErrorMessage(e);
+          console.warn(`[GeminiAdvisor.testConnection] Falha com modelo ${m}:`, cleanMsg);
+
+          if (cleanMsg.includes("API_KEY_INVALID") || cleanMsg.includes("API key not valid")) {
             return {
               success: false,
               model: m,
-              message: "Chave de API inválida ou sem permissão. Verifique sua chave no Google AI Studio.",
+              message: "Chave de API inválida. Verifique sua chave no Google AI Studio.",
             };
           }
-          // Em caso de 503 (alta demanda) ou 404, continua para o próximo modelo candidato
+
+          // Se for 503 (alta demanda) ou 404, continua para o próximo modelo candidato
           continue;
         }
       }
 
+      const finalErrorMsg = extractCleanErrorMessage(lastError);
       return {
         success: false,
         model: targetModel,
-        message:
-          "Nenhum modelo do Gemini respondeu com a chave fornecida. Verifique se a chave do Google AI Studio está correta e ativa.",
+        message: finalErrorMsg
+          ? `O Google retornou o seguinte erro: ${finalErrorMsg}`
+          : "Nenhum modelo do Gemini respondeu com a chave fornecida. Verifique se a chave do Google AI Studio está correta e ativa.",
       };
     } catch (err: any) {
       return {
         success: false,
         model,
-        message: err?.message || String(err),
+        message: extractCleanErrorMessage(err),
       };
     }
   },
@@ -251,7 +304,6 @@ DIRETRIZES DE RESPOSTA:
               contents,
               config: {
                 systemInstruction,
-                temperature: 0.7,
               },
             });
 
@@ -264,20 +316,25 @@ DIRETRIZES DE RESPOSTA:
             }
           } catch (err: any) {
             lastError = err;
-            const msg = String(err?.message || "");
-            console.warn(`[GeminiAdvisor] Falha com modelo "${model}":`, msg);
+            const cleanMsg = extractCleanErrorMessage(err);
+            console.warn(`[GeminiAdvisor] Falha com modelo "${model}":`, cleanMsg);
 
             // Se for erro de chave inválida ou permissão negada, interrompe tentativas
-            if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
+            if (
+              cleanMsg.includes("API_KEY_INVALID") ||
+              cleanMsg.includes("API key not valid") ||
+              cleanMsg.includes("401") ||
+              cleanMsg.includes("403")
+            ) {
               return {
-                reply: `⚠️ **Chave de API Inválida:** O Google recusou a autenticação da chave. Verifique se copiou a chave correta no Google AI Studio.`,
+                reply: `⚠️ **Chave de API Inválida:** O Google recusou a autenticação da chave (${cleanMsg}). Verifique se copiou a chave correta no Google AI Studio.`,
                 provider: "fallback",
-                errorDetail: msg,
+                errorDetail: cleanMsg,
               };
             }
 
             // Se for pico de demanda (503 UNAVAILABLE) ou rate limit (429), pula imediatamente para o próximo modelo na fila de contingência
-            if (msg.includes("503") || msg.includes("UNAVAILABLE") || msg.includes("429")) {
+            if (cleanMsg.includes("503") || cleanMsg.includes("UNAVAILABLE") || cleanMsg.includes("429")) {
               console.info(`[GeminiAdvisor] Modelo ${model} congestionado. Alternando automaticamente para o próximo modelo de alta disponibilidade...`);
               continue;
             }
@@ -288,7 +345,7 @@ DIRETRIZES DE RESPOSTA:
         }
 
         console.warn("[GeminiAdvisor] Todas as tentativas do Gemini falharam. Último erro:", lastError);
-        const errorDetail = lastError?.message || "Erro de comunicação com a API do Gemini.";
+        const errorDetail = extractCleanErrorMessage(lastError) || "Erro de comunicação com a API do Gemini.";
 
         return {
           reply: `⚠️ **Aviso:** Não foi possível obter resposta do Google Gemini (${errorDetail}).\n\nExibindo resposta calculada pelo motor local:\n\n` +
