@@ -29,6 +29,12 @@ import { FinancialAdvisorService } from "../services/financial-advisor.service";
 import { ChatMessage } from "../types/assistant.types";
 import { PurchaseSimulatorCard } from "./purchase-simulator-card";
 import { formatCurrency } from "@/features/dashboard/lib/financial-math";
+import {
+  GeminiConfigDialog,
+  LOCAL_STORAGE_GEMINI_KEY,
+  LOCAL_STORAGE_GEMINI_MODEL,
+  DEFAULT_GEMINI_MODEL,
+} from "./gemini-config-dialog";
 
 export function AssistantView() {
   const selectedMonth = useTransactionStore((state) => state.selectedMonth);
@@ -75,6 +81,23 @@ Como posso te ajudar hoje? Você pode clicar em uma das sugestões abaixo ou me 
     },
   ]);
 
+  // Estado de Configuração da IA (Gemini)
+  const [isConfigOpen, setIsConfigOpen] = React.useState(false);
+  const [geminiConfig, setGeminiConfig] = React.useState<{ hasKey: boolean; model: string }>({
+    hasKey: false,
+    model: DEFAULT_GEMINI_MODEL,
+  });
+
+  // Carrega configuração salva ao montar
+  React.useEffect(() => {
+    const key = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY);
+    const model = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
+    setGeminiConfig({
+      hasKey: Boolean(key && key.trim()),
+      model,
+    });
+  }, []);
+
   const chatBottomRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -96,16 +119,21 @@ Como posso te ajudar hoje? Você pode clicar em uma das sugestões abaixo ou me 
     setInputMessage("");
     setIsSending(true);
 
+    const storedKey = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY) || undefined;
+    const storedModel = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || undefined;
+
     try {
       const res = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: text,
-          history: messages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+          history: messages.slice(-10).map((m) => ({ role: m.role, content: m.content })),
           diagnosticReport: report,
           selectedMonthName: monthName,
           selectedYear,
+          apiKey: storedKey,
+          model: storedModel,
         }),
       });
 
@@ -520,9 +548,26 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
                   </CardDescription>
                 </div>
               </div>
-              <Badge variant="outline" className="text-[11px] text-emerald-500 border-emerald-500/20 bg-emerald-500/5">
-                ● Ativo
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsConfigOpen(true)}
+                  className="h-7 text-xs gap-1.5 border-primary/20 hover:border-primary/40 text-primary"
+                >
+                  <Sparkles className="size-3" />
+                  <span>Configurar IA</span>
+                </Button>
+                {geminiConfig.hasKey ? (
+                  <Badge variant="outline" className="text-[11px] text-emerald-500 border-emerald-500/20 bg-emerald-500/5">
+                    ● Gemini ({geminiConfig.model})
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[11px] text-amber-500 border-amber-500/20 bg-amber-500/5">
+                    ● Motor Local
+                  </Badge>
+                )}
+              </div>
             </div>
           </CardHeader>
 
@@ -620,6 +665,13 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
           </div>
         </Card>
       )}
+
+      {/* MODAL DE CONFIGURAÇÃO DA IA */}
+      <GeminiConfigDialog
+        open={isConfigOpen}
+        onOpenChange={setIsConfigOpen}
+        onConfigChanged={setGeminiConfig}
+      />
     </div>
   );
 }

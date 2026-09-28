@@ -7,9 +7,65 @@ export interface ChatContextPayload {
   diagnosticReport: AssistantDiagnosticReport;
   selectedMonthName: string;
   selectedYear: number;
+  apiKey?: string;
+  model?: string;
+}
+
+export interface ChatResponseResult {
+  reply: string;
+  provider: "gemini" | "fallback";
+  modelUsed?: string;
+  errorDetail?: string;
 }
 
 export const GeminiAdvisorService = {
+  /**
+   * Constrói o histórico formatado para a API do Google Gemini.
+   * IMPORTANTE: A API Gemini EXIGE que:
+   * 1. A conversa inicie com uma mensagem de role 'user'.
+   * 2. As mensagens alternem estritamente entre 'user' e 'model'.
+   */
+  buildGeminiContents(
+    history: { role: "user" | "assistant"; content: string }[] | undefined,
+    currentMessage: string
+  ): Array<{ role: "user" | "model"; parts: [{ text: string }] }> {
+    const contents: Array<{ role: "user" | "model"; parts: [{ text: string }] }> = [];
+
+    // Filtra mensagens vazias
+    const validHistory = (history || []).filter(
+      (h) => h.content && h.content.trim().length > 0
+    );
+
+    // Encontra a primeira mensagem real do usuário (descarta boas-vindas do assistente no topo)
+    const firstUserIndex = validHistory.findIndex((h) => h.role === "user");
+    const usableHistory = firstUserIndex >= 0 ? validHistory.slice(firstUserIndex) : [];
+
+    for (const item of usableHistory) {
+      const role = item.role === "assistant" ? "model" : "user";
+      // Se houver duas mensagens seguidas do mesmo role, mescla para garantir alternância
+      if (contents.length > 0 && contents[contents.length - 1].role === role) {
+        contents[contents.length - 1].parts[0].text += "\n\n" + item.content;
+      } else {
+        contents.push({
+          role,
+          parts: [{ text: item.content }],
+        });
+      }
+    }
+
+    // Adiciona a pergunta atual do usuário no final
+    if (contents.length > 0 && contents[contents.length - 1].role === "user") {
+      contents[contents.length - 1].parts[0].text += "\n\n" + currentMessage;
+    } else {
+      contents.push({
+        role: "user",
+        parts: [{ text: currentMessage }],
+      });
+    }
+
+    return contents;
+  },
+
   /**
    * Constrói o prompt do sistema enriquecido com as métricas financeiras reais do usuário.
    */
@@ -52,7 +108,7 @@ DADOS FINANCEIROS REAIS DO USUÁRIO (${monthName} de ${year}):
 ${cutsText}
 
 DIRETRIZES DE RESPOSTA:
-- Responda SEMPRE em Português do Brasil de forma clara, amigável e estruturada com tópicos.
+- Responda SEMPRE em Português do Brasil de forma clara, amigável e estruturada com tópicos e markdown.
 - Use valores em Reais formatados (R$ X.XXX,XX).
 - Cite números específicos dos dados acima para tornar o conselho pessoal e confiável.
 - Se o usuário perguntar sobre compras ou parcelamentos, avalie o impacto no orçamento diário e recomende cautela ou segurança.
@@ -61,56 +117,145 @@ DIRETRIZES DE RESPOSTA:
   },
 
   /**
-   * Gera a resposta do assistente utilizando o Gemini 3.8 / 2.5 Flash via @google/genai,
+   * Testa a conectividade com a API do Google Gemini usando uma chave fornecida.
+   */
+  async testConnection(
+    apiKey: string,
+    model: string = "gemini-2.0-flash"
+  ): Promise<{ success: boolean; model: string; message: string }> {
+    try {
+      const client = new GoogleGenAI({ apiKey, vertexai: false });
+      const candidateModels = Array.from(
+        new Set([model, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"])
+      );
+
+      for (const m of candidateModels) {
+        try {
+          const res = await client.models.generateContent({
+            model: m,
+            contents: "Responda apenas com a palavra: 'Conexão OK'",
+          });
+          if (res && res.text) {
+            return {
+              success: true,
+              model: m,
+              message: res.text.trim(),
+            };
+          }
+        } catch (e: any) {
+          console.warn(`[GeminiAdvisor.testConnection] Falha com modelo ${m}:`, e?.message);
+        }
+      }
+
+      return {
+        success: false,
+        model,
+        message:
+          "Nenhum modelo do Gemini respondeu com a chave fornecida. Verifique se a chave do Google AI Studio está correta e ativa.",
+      };
+    } catch (err: any) {
+      return {
+        success: false,
+        model,
+        message: err?.message || String(err),
+      };
+    }
+  },
+
+  /**
+   * Gera a resposta do assistente utilizando o Gemini via @google/genai,
    * ou fallback contextualizado caso não haja chave de API configurada.
    */
-  async generateAdvice(payload: ChatContextPayload): Promise<string> {
+  async generateAdvice(payload: ChatContextPayload): Promise<ChatResponseResult> {
     const { message, history, diagnosticReport, selectedMonthName, selectedYear } = payload;
-    const apiKey = process.env.GEMINI_API_KEY;
 
-    // Se a chave de API estiver configurada no ambiente
+    // Busca a chave: primeiro do payload (enviado pelo cliente via localStorage), depois de env vars
+    const apiKey =
+      (payload.apiKey && payload.apiKey.trim()) ||
+      process.env.GEMINI_API_KEY ||
+      process.env.GOOGLE_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    const requestedModel =
+      (payload.model && payload.model.trim()) ||
+      process.env.GEMINI_MODEL ||
+      "gemini-2.0-flash";
+
+    // Lista de modelos candidatos para failover automático
+    const candidateModels = Array.from(
+      new Set([
+        requestedModel,
+        "gemini-2.0-flash",
+        "gemini-1.5-flash",
+        "gemini-2.5-flash",
+        "gemini-2.0-flash-lite",
+      ])
+    );
+
+    // Se a chave de API estiver configurada
     if (apiKey) {
       try {
-        const client = new GoogleGenAI({ apiKey });
+        const client = new GoogleGenAI({ apiKey, vertexai: false });
         const systemInstruction = this.buildSystemInstruction(
           diagnosticReport,
           selectedMonthName,
           selectedYear
         );
 
-        // Prepara o histórico recente
-        const contents = (history || []).slice(-6).map((h) => ({
-          role: h.role === "assistant" ? "model" : "user",
-          parts: [{ text: h.content }],
-        }));
+        const contents = this.buildGeminiContents(history, message);
 
-        // Adiciona a pergunta atual do usuário
-        contents.push({
-          role: "user",
-          parts: [{ text: message }],
-        });
+        let lastError: any = null;
 
-        const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+        for (const model of candidateModels) {
+          try {
+            const response = await client.models.generateContent({
+              model,
+              contents,
+              config: {
+                systemInstruction,
+                temperature: 0.7,
+              },
+            });
 
-        const response = await client.models.generateContent({
-          model,
-          contents,
-          config: {
-            systemInstruction,
-            temperature: 0.7,
-          },
-        });
+            if (response && response.text) {
+              return {
+                reply: response.text.trim(),
+                provider: "gemini",
+                modelUsed: model,
+              };
+            }
+          } catch (err: any) {
+            lastError = err;
+            console.warn(`[GeminiAdvisor] Tentativa com modelo "${model}" falhou:`, err?.message || err);
 
-        if (response && response.text) {
-          return response.text.trim();
+            // Se for erro de chave inválida ou permissão negada, interrompe tentativas
+            const msg = String(err?.message || "");
+            if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("403")) {
+              break;
+            }
+          }
         }
-      } catch (err) {
-        console.warn("Falha ao consultar Gemini API, recorrendo ao motor analítico local:", err);
+
+        console.warn("[GeminiAdvisor] Todas as tentativas do Gemini falharam. Último erro:", lastError);
+        const errorDetail = lastError?.message || "Erro de comunicação com a API do Gemini.";
+
+        return {
+          reply: `⚠️ **Aviso:** Não foi possível obter resposta do Google Gemini (${errorDetail}).\n\nExibindo resposta calculada pelo motor local:\n\n` +
+            this.generateLocalFallback(message, diagnosticReport, selectedMonthName, selectedYear),
+          provider: "fallback",
+          errorDetail,
+        };
+      } catch (err: any) {
+        console.warn("Falha geral ao inicializar cliente Gemini:", err);
       }
     }
 
     // Fallback inteligente: motor analítico determinístico com respostas estruturadas
-    return this.generateLocalFallback(message, diagnosticReport, selectedMonthName, selectedYear);
+    return {
+      reply: this.generateLocalFallback(message, diagnosticReport, selectedMonthName, selectedYear),
+      provider: "fallback",
+      errorDetail: "Nenhuma chave GEMINI_API_KEY configurada.",
+    };
   },
 
   /**

@@ -12,9 +12,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const reply = await GeminiAdvisorService.generateAdvice(payload);
+    const result = await GeminiAdvisorService.generateAdvice(payload);
 
-    return NextResponse.json({ reply });
+    return NextResponse.json(result);
   } catch (error: any) {
     console.error("Erro na API do assistente:", error);
     return NextResponse.json(
