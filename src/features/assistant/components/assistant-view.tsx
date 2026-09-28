@@ -95,9 +95,8 @@ Como posso te ajudar hoje? Você pode clicar em uma das sugestões abaixo ou me 
     if (
       model.includes("2.0") ||
       model.includes("1.5") ||
-      model.includes("3.8") ||
+      model.includes("2.5") ||
       model.includes("3.5-flash-lite") ||
-      model === "gemini-3.5-flash" ||
       !model.startsWith("gemini-")
     ) {
       model = DEFAULT_GEMINI_MODEL;

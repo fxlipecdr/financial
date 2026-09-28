@@ -35,16 +35,16 @@ import {
 
 export const LOCAL_STORAGE_GEMINI_KEY = "financial_gemini_api_key";
 export const LOCAL_STORAGE_GEMINI_MODEL = "financial_gemini_model";
-export const DEFAULT_GEMINI_MODEL = "gemini-3.7-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-3.8-flash";
 
 export const AVAILABLE_GEMINI_MODELS = [
-  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Recomendado - Mais Rápido e Estável)" },
-  { id: "gemini-3.1-pro-preview", label: "Gemini 3.1 Pro (Alta Capacidade e Sem Filas 503)" },
+  { id: "gemini-3.8-flash", label: "Gemini 3.8 Flash (Mais Recente e Inteligente - Recomendado)" },
+  { id: "gemini-3.7-flash", label: "Gemini 3.7 Flash (Rápido e Estável)" },
+  { id: "gemini-3.6-flash", label: "Gemini 3.6 Flash (Equilibrado e Sem Filas)" },
+  { id: "gemini-3.5-flash", label: "Gemini 3.5 Flash (Versão Estável Rápida)" },
+  { id: "gemini-3.1-flash-lite", label: "Gemini 3.1 Flash-Lite (Econômico e Rápido)" },
   { id: "gemini-3-flash-preview", label: "Gemini 3 Flash Preview (Alternativa Ágil)" },
-  { id: "gemini-3-pro-preview", label: "Gemini 3 Pro Preview (Raciocínio Avançado)" },
-  { id: "gemini-2.5-flash", label: "Gemini 2.5 Flash (Versão Clássica)" },
-  { id: "gemini-2.5-pro", label: "Gemini 2.5 Pro (Versão Clássica Robusta)" },
-  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite (Econômico - Sujeito a fila 503)" },
+  { id: "gemini-3.5-flash-lite", label: "Gemini 3.5 Flash-Lite (Leve - Sujeito a fila 503)" },
 ];
 
 interface GeminiConfigDialogProps {
@@ -73,13 +73,12 @@ export function GeminiConfigDialog({
       const savedKey = localStorage.getItem(LOCAL_STORAGE_GEMINI_KEY) || "";
       let savedModel = localStorage.getItem(LOCAL_STORAGE_GEMINI_MODEL) || DEFAULT_GEMINI_MODEL;
       
-      // Migração automática de modelos antigos ou com instabilidade crônica de fila 503
+      // Migração automática de modelos antigos ou descontinuados
       if (
         savedModel.includes("2.0") ||
         savedModel.includes("1.5") ||
-        savedModel.includes("3.8") ||
+        savedModel.includes("2.5") ||
         savedModel.includes("3.5-flash-lite") ||
-        savedModel === "gemini-3.5-flash" ||
         !savedModel.startsWith("gemini-")
       ) {
         savedModel = DEFAULT_GEMINI_MODEL;

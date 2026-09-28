@@ -19,6 +19,16 @@ export interface ChatResponseResult {
 }
 
 function extractCleanErrorMessage(err: any): string {
+  if (err?.error?.message) {
+    return String(err.error.message);
+  }
+  if (err?.body) {
+    try {
+      const parsed = typeof err.body === "string" ? JSON.parse(err.body) : err.body;
+      const target = Array.isArray(parsed) ? parsed[0] : parsed;
+      if (target?.error?.message) return String(target.error.message);
+    } catch {}
+  }
   const raw = String(err?.message || err || "");
   try {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -135,18 +145,19 @@ DIRETRIZES DE RESPOSTA:
    */
   async testConnection(
     apiKey: string,
-    model: string = "gemini-3.7-flash"
+    model: string = "gemini-3.8-flash"
   ): Promise<{ success: boolean; model: string; message: string }> {
     try {
       const client = new GoogleGenAI({ apiKey, vertexai: false });
-      let targetModel = model || "gemini-3.7-flash";
+      let targetModel = model || "gemini-3.8-flash";
       if (
         targetModel.includes("2.0") ||
         targetModel.includes("1.5") ||
+        targetModel.includes("2.5") ||
         targetModel.includes("3.5-flash-lite") ||
         !targetModel.startsWith("gemini-")
       ) {
-        targetModel = "gemini-3.7-flash";
+        targetModel = "gemini-3.8-flash";
       }
 
       // 1. Tenta listar modelos para autenticar a chave e obter os modelos ativos na conta
@@ -156,7 +167,19 @@ DIRETRIZES DE RESPOSTA:
         if (pager && pager.page) {
           availableModels = pager.page
             .map((m) => (m.name || "").replace(/^models\//, ""))
-            .filter((name) => name.length > 0);
+            .filter((name) =>
+              name.length > 0 &&
+              name.startsWith("gemini-") &&
+              !name.includes("embedding") &&
+              !name.includes("imagen") &&
+              !name.includes("veo") &&
+              !name.includes("audio") &&
+              !name.includes("tts") &&
+              !name.includes("transcribe") &&
+              !name.includes("2.0") &&
+              !name.includes("1.5") &&
+              !name.includes("2.5")
+            );
         }
       } catch (listErr: any) {
         const cleanMsg = extractCleanErrorMessage(listErr);
@@ -179,18 +202,25 @@ DIRETRIZES DE RESPOSTA:
         }
       }
 
-      // 2. Lista de modelos candidatos priorizando os mais estáveis e com maior disponibilidade
+      // 2. Lista de modelos candidatos priorizando os mais estáveis da linha Gemini 3 (Free Tier)
       const candidateModels = Array.from(
         new Set([
           targetModel,
+          "gemini-3.8-flash",
           "gemini-3.7-flash",
-          "gemini-3.1-pro-preview",
+          "gemini-3.6-flash",
+          "gemini-3.5-flash",
+          "gemini-3.1-flash-lite",
           "gemini-3-flash-preview",
-          "gemini-3-pro-preview",
-          "gemini-2.5-flash",
-          "gemini-2.5-pro",
-          ...availableModels.filter((name) => !name.includes("lite")),
+          ...availableModels,
         ])
+      ).filter(
+        (m) =>
+          m &&
+          !m.includes("2.0") &&
+          !m.includes("1.5") &&
+          !m.includes("2.5") &&
+          m.startsWith("gemini-")
       );
 
       let lastError: any = null;
@@ -284,38 +314,71 @@ DIRETRIZES DE RESPOSTA:
     let requestedModel =
       (payload.model && payload.model.trim()) ||
       process.env.GEMINI_MODEL ||
-      "gemini-3.7-flash";
+      "gemini-3.8-flash";
 
-    // Substituição automática de modelos legados ou com congestionamento frequente
+    // Substituição automática de modelos legados ou descontinuados
     if (
       requestedModel.includes("2.0") ||
       requestedModel.includes("1.5") ||
-      requestedModel.includes("3.8") ||
+      requestedModel.includes("2.5") ||
       requestedModel.includes("3.5-flash-lite") ||
-      requestedModel === "gemini-3.5-flash" ||
       !requestedModel.startsWith("gemini-")
     ) {
-      requestedModel = "gemini-3.7-flash";
+      requestedModel = "gemini-3.8-flash";
     }
-
-    // Lista de modelos candidatos para failover automático com prioridade em alta disponibilidade
-    // Inclui Pro models (gemini-3.1-pro-preview e gemini-3-pro-preview) que usam pools de hardware independentes
-    const candidateModels = Array.from(
-      new Set([
-        requestedModel,
-        "gemini-3.7-flash",
-        "gemini-3.1-pro-preview",
-        "gemini-3-flash-preview",
-        "gemini-3-pro-preview",
-        "gemini-2.5-flash",
-        "gemini-2.5-pro",
-      ])
-    );
 
     // Se a chave de API estiver configurada
     if (apiKey) {
       try {
         const client = new GoogleGenAI({ apiKey, vertexai: false });
+
+        // 1. Tenta listar modelos autorizados na conta para failover com máxima precisão
+        let liveModels: string[] = [];
+        try {
+          const pager = await client.models.list({ config: { pageSize: 50 } });
+          if (pager && pager.page) {
+            liveModels = pager.page
+              .map((m) => (m.name || "").replace(/^models\//, ""))
+              .filter((name) =>
+                name.length > 0 &&
+                name.startsWith("gemini-") &&
+                !name.includes("embedding") &&
+                !name.includes("imagen") &&
+                !name.includes("veo") &&
+                !name.includes("audio") &&
+                !name.includes("tts") &&
+                !name.includes("transcribe") &&
+                !name.includes("2.0") &&
+                !name.includes("1.5") &&
+                !name.includes("2.5")
+              );
+          }
+        } catch (e) {
+          console.warn("[GeminiAdvisor] Falha ao consultar models.list:", e);
+        }
+
+        // 2. Cascata oficial de modelos Gemini 3 Free Tier com prioridade nos mais rápidos e sem fila
+        const candidateModels = Array.from(
+          new Set([
+            requestedModel,
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.6-flash",
+            "gemini-3.5-flash",
+            "gemini-3.1-flash-lite",
+            "gemini-3-flash-preview",
+            ...liveModels,
+            "gemini-3.5-flash-lite",
+          ])
+        ).filter(
+          (m) =>
+            m &&
+            !m.includes("2.0") &&
+            !m.includes("1.5") &&
+            !m.includes("2.5") &&
+            m.startsWith("gemini-")
+        );
+
         const systemInstruction = this.buildSystemInstruction(
           diagnosticReport,
           selectedMonthName,
