@@ -304,16 +304,16 @@ DIRETRIZES DE RESPOSTA:
   async generateAdvice(payload: ChatContextPayload): Promise<ChatResponseResult> {
     const { message, history, diagnosticReport, selectedMonthName, selectedYear } = payload;
 
-    // Busca a chave: primeiro do payload (enviado pelo cliente via localStorage), depois de env vars
+    // Prioriza estritamente as variáveis de ambiente do servidor Vercel (GEMINI_API_KEY ou GOOGLE_API_KEY)
     const apiKey =
-      (payload.apiKey && payload.apiKey.trim()) ||
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
+      (payload.apiKey && payload.apiKey.trim()) ||
       process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
     let requestedModel =
-      (payload.model && payload.model.trim()) ||
       process.env.GEMINI_MODEL ||
+      (payload.model && payload.model.trim()) ||
       "gemini-3.8-flash";
 
     // Substituição automática de modelos legados ou descontinuados

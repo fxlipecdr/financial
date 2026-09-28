@@ -12,15 +12,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (
-      !payload.model ||
-      payload.model.includes("2.0") ||
-      payload.model.includes("1.5") ||
-      payload.model.includes("3.5-flash-lite") ||
-      !payload.model.startsWith("gemini-")
-    ) {
-      payload.model = "gemini-3.7-flash";
-    }
+    // Força o uso estrito da chave configurada nas variáveis de ambiente do Vercel
+    payload.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    payload.model = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 
     const result = await GeminiAdvisorService.generateAdvice(payload);
 
