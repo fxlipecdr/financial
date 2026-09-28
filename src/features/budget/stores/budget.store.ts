@@ -10,9 +10,8 @@ export const DEFAULT_CATEGORY_LIMITS: Record<string, number> = {
   alimentacao: 1600,
   transporte: 700,
   saude: 700,
-  lazer: 400,
+  lazer_outros: 600,
   educacao: 300,
-  outros_gastos: 200,
 };
 
 interface BudgetState {

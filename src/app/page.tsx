@@ -16,6 +16,48 @@ export default function HomePage() {
 
   React.useEffect(() => {
     setMounted(true);
+
+    // Migração proativa no armazenamento local do navegador
+    try {
+      const localTxs = useTransactionStore.getState().transactions;
+      if (localTxs.some((t) => t.category === "lazer" || t.category === "outros_gastos")) {
+        useTransactionStore.setState({
+          transactions: localTxs.map((t) =>
+            t.category === "lazer" || t.category === "outros_gastos"
+              ? { ...t, category: "lazer_outros" }
+              : t
+          ),
+        });
+      }
+
+      const localCats = useCategoryStore.getState().categories;
+      const filteredCats = localCats.filter((c) => c.id !== "lazer" && c.id !== "outros_gastos");
+      if (!filteredCats.some((c) => c.id === "lazer_outros")) {
+        filteredCats.push({
+          id: "lazer_outros",
+          name: "Lazer/Outros",
+          color: "#8b5cf6",
+          type: "expense",
+          defaultLimit: 600,
+          isSystem: true,
+        });
+      }
+      useCategoryStore.setState({ categories: filteredCats });
+
+      const localLimits = { ...useBudgetStore.getState().categoryLimits };
+      if (localLimits.lazer !== undefined || localLimits.outros_gastos !== undefined || !localLimits.lazer_outros) {
+        localLimits.lazer_outros =
+          localLimits.lazer_outros ||
+          (localLimits.lazer || 0) + (localLimits.outros_gastos || 0) ||
+          600;
+        delete localLimits.lazer;
+        delete localLimits.outros_gastos;
+        useBudgetStore.setState({ categoryLimits: localLimits });
+      }
+    } catch {
+      // noop
+    }
+
     SupabaseSyncService.fetchUserData().then((cloudData) => {
       if (cloudData) {
         if (cloudData.transactions.length > 0) {

@@ -43,6 +43,7 @@ export function getCategoryIcon(categoryId: string) {
     case "saude":
       return HeartPulse;
     case "lazer":
+    case "lazer_outros":
       return Gamepad2;
     case "educacao":
       return GraduationCap;

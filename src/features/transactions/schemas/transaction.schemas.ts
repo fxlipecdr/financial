@@ -6,9 +6,8 @@ export const EXPENSE_CATEGORIES: CategoryInfo[] = [
   { id: "alimentacao", name: "Alimentação", color: "#f59e0b", type: "expense" },
   { id: "transporte", name: "Transporte", color: "#3b82f6", type: "expense" },
   { id: "saude", name: "Saúde", color: "#ec4899", type: "expense" },
-  { id: "lazer", name: "Lazer & Cultura", color: "#8b5cf6", type: "expense" },
+  { id: "lazer_outros", name: "Lazer/Outros", color: "#8b5cf6", type: "expense" },
   { id: "educacao", name: "Educação", color: "#14b8a6", type: "expense" },
-  { id: "outros_gastos", name: "Outros Gastos", color: "#64748b", type: "expense" },
 ];
 
 export const INCOME_CATEGORIES: CategoryInfo[] = [
@@ -23,8 +22,9 @@ export const ALL_CATEGORIES = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 import { useCategoryStore } from "@/features/categories/stores/category.store";
 
 export function getCategoryById(id: string): CategoryInfo {
+  const targetId = id === "lazer" || id === "outros_gastos" ? "lazer_outros" : id;
   try {
-    const storeCategory = useCategoryStore.getState().getCategoryById(id);
+    const storeCategory = useCategoryStore.getState().getCategoryById(targetId);
     if (storeCategory && storeCategory.name) {
       return {
         id: storeCategory.id,
@@ -38,9 +38,9 @@ export function getCategoryById(id: string): CategoryInfo {
   }
 
   return (
-    ALL_CATEGORIES.find((c) => c.id === id) || {
-      id,
-      name: id,
+    ALL_CATEGORIES.find((c) => c.id === targetId) || {
+      id: targetId,
+      name: targetId,
       color: "#64748b",
       type: "expense",
     }

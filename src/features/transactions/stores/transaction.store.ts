@@ -120,7 +120,7 @@ const SEED_TRANSACTIONS: Transaction[] = [
     description: "Assinaturas de Streaming",
     amount: 170,
     type: "expense",
-    category: "lazer",
+    category: "lazer_outros",
     date: "2026-09-15",
     status: "paid",
     createdAt: "2026-09-15T18:00:00Z",

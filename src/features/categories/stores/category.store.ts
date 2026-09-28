@@ -37,11 +37,11 @@ export const DEFAULT_CATEGORIES: Category[] = [
     isSystem: true,
   },
   {
-    id: "lazer",
-    name: "Lazer & Cultura",
+    id: "lazer_outros",
+    name: "Lazer/Outros",
     color: "#8b5cf6",
     type: "expense",
-    defaultLimit: 400,
+    defaultLimit: 600,
     isSystem: true,
   },
   {
@@ -50,14 +50,6 @@ export const DEFAULT_CATEGORIES: Category[] = [
     color: "#14b8a6",
     type: "expense",
     defaultLimit: 300,
-    isSystem: true,
-  },
-  {
-    id: "outros_gastos",
-    name: "Outros Gastos",
-    color: "#64748b",
-    type: "expense",
-    defaultLimit: 200,
     isSystem: true,
   },
   // Receitas
