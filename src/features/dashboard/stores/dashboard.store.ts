@@ -62,12 +62,64 @@ export function computeYearDataFromTransactions(
 ): YearFinancialData {
   const yearPrefix = `${year}-`;
 
+  // Mapeia todas as transações por YYYY-MM cronológico
+  const monthSums = new Map<string, { income: number; expenses: number; balance: number }>();
+  if (Array.isArray(transactions)) {
+    for (const tx of transactions) {
+      if (!tx?.date || tx.date.length < 7) continue;
+      const ym = tx.date.substring(0, 7);
+      const curr = monthSums.get(ym) || { income: 0, expenses: 0, balance: 0 };
+      if (tx.type === "income") {
+        curr.income += Number(tx.amount) || 0;
+      } else {
+        curr.expenses += Number(tx.amount) || 0;
+      }
+      curr.balance = curr.income - curr.expenses;
+      monthSums.set(ym, curr);
+    }
+  }
+
+  const sortedYms = Array.from(monthSums.keys()).sort();
+
+  function getCarryoverForMonth(targetYm: string): {
+    previousBalance: number;
+    immediatePrevSurplus: number;
+    prevMonthName: string;
+  } {
+    const [y, m] = targetYm.split("-").map(Number);
+    let prevYear = y;
+    let prevMonth = m - 1;
+    if (prevMonth < 1) {
+      prevMonth = 12;
+      prevYear--;
+    }
+    const prevYm = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+    const prevMonthName = MONTH_NAMES[prevMonth - 1]?.full || "Mês Anterior";
+
+    const prevData = monthSums.get(prevYm);
+    const immediatePrevSurplus =
+      prevData && prevData.income > 0 ? Math.max(0, prevData.balance) : 0;
+
+    let cumulative = 0;
+    let started = false;
+    for (const ym of sortedYms) {
+      if (ym >= targetYm) break;
+      const d = monthSums.get(ym)!;
+      if (d.income > 0) started = true;
+      if (started) cumulative += d.balance;
+    }
+    const previousBalance = started ? cumulative : 0;
+    return { previousBalance, immediatePrevSurplus, prevMonthName };
+  }
+
   const months: MonthData[] = MONTH_NAMES.map((m, index) => {
     const monthNum = index + 1;
     const monthStr = monthNum < 10 ? `0${monthNum}` : `${monthNum}`;
     const ymPrefix = `${yearPrefix}${monthStr}`;
 
-    const monthTxs = transactions.filter((tx) => tx.date.startsWith(ymPrefix));
+    const monthTxs = Array.isArray(transactions)
+      ? transactions.filter((tx) => tx.date.startsWith(ymPrefix))
+      : [];
 
     const income = monthTxs
       .filter((tx) => tx.type === "income")
@@ -80,6 +132,9 @@ export function computeYearDataFromTransactions(
     const balance = calculateBalance(income, expenses);
     const savingsRate = calculateSavingsRate(income, expenses);
 
+    const { previousBalance } = getCarryoverForMonth(ymPrefix);
+    const accumulatedBalance = previousBalance + balance;
+
     return {
       monthIndex: index,
       monthName: m.short,
@@ -88,10 +143,14 @@ export function computeYearDataFromTransactions(
       expenses,
       balance,
       savingsRate,
+      previousBalance,
+      accumulatedBalance,
     };
   });
 
-  const kpis = computeKPIs(months, targetMonth);
+  const targetMonthStr = targetMonth + 1 < 10 ? `0${targetMonth + 1}` : `${targetMonth + 1}`;
+  const targetCarryover = getCarryoverForMonth(`${yearPrefix}${targetMonthStr}`);
+  const kpis = computeKPIs(months, targetMonth, targetCarryover);
 
   return {
     year,
@@ -101,10 +160,14 @@ export function computeYearDataFromTransactions(
 }
 
 function buildYearData(year: number, rawValues: [number, number][], targetMonth = 8): YearFinancialData {
+  let running = 0;
   const months: MonthData[] = MONTH_NAMES.map((m, index) => {
     const [income, expenses] = rawValues[index] || [0, 0];
     const balance = calculateBalance(income, expenses);
     const savingsRate = calculateSavingsRate(income, expenses);
+    const previousBalance = running;
+    running += balance;
+    const accumulatedBalance = running;
 
     return {
       monthIndex: index,
@@ -114,6 +177,8 @@ function buildYearData(year: number, rawValues: [number, number][], targetMonth 
       expenses,
       balance,
       savingsRate,
+      previousBalance,
+      accumulatedBalance,
     };
   });
 

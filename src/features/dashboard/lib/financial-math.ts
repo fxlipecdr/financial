@@ -47,7 +47,11 @@ export function formatPercentage(value: number): string {
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}%`;
 }
 
-export function computeKPIs(months: MonthData[], targetMonthIdx = 8): FinancialKPIs {
+export function computeKPIs(
+  months: MonthData[],
+  targetMonthIdx = 8,
+  carryoverInfo?: { previousBalance: number; immediatePrevSurplus: number; prevMonthName: string }
+): FinancialKPIs {
   let totalIncomeDec = new Decimal(0);
   let totalExpensesDec = new Decimal(0);
 
@@ -57,8 +61,6 @@ export function computeKPIs(months: MonthData[], targetMonthIdx = 8): FinancialK
   let highestExpenseMonth = "-";
 
   const currentMonthIdx = Math.max(0, Math.min(targetMonthIdx, months.length - 1));
-  const accumulatedBaseDec = new Decimal(0); // Saldo acumulado real a partir das transações
-  let accumulatedUntilTargetDec = accumulatedBaseDec;
 
   for (let i = 0; i < months.length; i++) {
     const m = months[i];
@@ -67,10 +69,6 @@ export function computeKPIs(months: MonthData[], targetMonthIdx = 8): FinancialK
 
     totalIncomeDec = totalIncomeDec.plus(inc);
     totalExpensesDec = totalExpensesDec.plus(exp);
-
-    if (i <= currentMonthIdx) {
-      accumulatedUntilTargetDec = accumulatedUntilTargetDec.plus(inc.minus(exp));
-    }
 
     if (inc.greaterThan(highestIncome)) {
       highestIncome = inc;
@@ -113,19 +111,40 @@ export function computeKPIs(months: MonthData[], targetMonthIdx = 8): FinancialK
     ? calculatePercentageChange(currentMonthBalance.toNumber(), prevMonthBalance.toNumber())
     : 0;
 
+  // Sobra e acumulação de meses anteriores
+  const previousMonthSurplus = carryoverInfo
+    ? carryoverInfo.immediatePrevSurplus
+    : prevMonth
+      ? Math.max(0, prevMonthBalance.toNumber())
+      : 0;
+
+  const accumulatedPreviousSurplus = carryoverInfo
+    ? carryoverInfo.previousBalance
+    : prevMonth
+      ? Math.max(0, prevMonthBalance.toNumber())
+      : 0;
+
+  const prevMonthName = carryoverInfo
+    ? carryoverInfo.prevMonthName
+    : prevMonth
+      ? prevMonth.monthFullName
+      : "Início do Ano";
+
   const monthComparison: MonthComparison = {
     savingsRate,
     savingsRatePrevMonth,
     incomeChangePercent,
     expensesChangePercent,
     balanceChangePercent,
-    prevMonthName: prevMonth ? prevMonth.monthFullName : "Início do Ano",
+    prevMonthName,
   };
 
-  // Saldo Atual: Saldo anterior acumulado + Saldo do mês corrente selecionado
-  const currentBalance = accumulatedUntilTargetDec.toNumber();
+  // Saldo Total: Sobra acumulada vinda do mês anterior + Saldo gerado no mês atual
+  const totalBalanceWithPrevious = toDecimal(accumulatedPreviousSurplus)
+    .plus(currentMonthBalance)
+    .toNumber();
 
-  // Saldo Projetado Fim de Mês: Receita - Despesa
+  const currentBalance = totalBalanceWithPrevious;
   const projectedEndBalance = currentMonthBalance.toNumber();
 
   const totalIncome = currentMonthIncome.toNumber();
@@ -137,6 +156,10 @@ export function computeKPIs(months: MonthData[], targetMonthIdx = 8): FinancialK
     totalIncome,
     totalExpenses,
     projectedEndBalance,
+    previousMonthSurplus,
+    accumulatedPreviousSurplus,
+    totalBalanceWithPrevious,
+    prevMonthName,
     monthComparison,
     netBalance,
     savingsRate,

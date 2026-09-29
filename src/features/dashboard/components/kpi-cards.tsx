@@ -29,6 +29,10 @@ export function KpiCards({ kpis, year, monthName }: KpiCardsProps) {
   const income = kpis.totalIncome;
   const expenses = kpis.totalExpenses;
   const projectedEndBalance = kpis.projectedEndBalance;
+  const totalBalanceWithPrevious = kpis.totalBalanceWithPrevious ?? currentBalance;
+  const previousMonthSurplus = kpis.previousMonthSurplus ?? 0;
+  const accumulatedPreviousSurplus = kpis.accumulatedPreviousSurplus ?? previousMonthSurplus;
+  const prevMonthName = kpis.prevMonthName || comp.prevMonthName || "Mês Anterior";
 
   // Indicadores analíticos do mês selecionado
   const savingsRate = comp.savingsRate;
@@ -36,123 +40,69 @@ export function KpiCards({ kpis, year, monthName }: KpiCardsProps) {
   const expensesChange = comp.expensesChangePercent;
   const balanceChange = comp.balanceChangePercent;
 
-  const isCurrentPositive = currentBalance >= 0;
+  const isTotalPositive = totalBalanceWithPrevious >= 0;
   const isProjectedPositive = projectedEndBalance >= 0;
+  const isPrevPositive = previousMonthSurplus >= 0;
 
   return (
     <div className="space-y-4">
-      {/* 4 CARDS PRINCIPAIS */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* 1. SALDO ATUAL */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground">
-              Saldo Atual
-            </CardTitle>
+      {/* 5 CARDS PRINCIPAIS INCLUINDO SALDO COM MÊS ANTERIOR */}
+      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        {/* 1. SALDO TOTAL (COM MÊS ANTERIOR) */}
+        <Card className="border-primary/40 bg-gradient-to-br from-card via-card to-primary/5 shadow-xs relative overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <span>Saldo com Mês Anterior</span>
+              </CardTitle>
+              <span className="text-[10px] text-muted-foreground block">
+                Soma total em caixa
+              </span>
+            </div>
             <div
               className={`flex size-8 items-center justify-center rounded-lg ${
-                isCurrentPositive ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
+                isTotalPositive ? "bg-emerald-500/10 text-emerald-500" : "bg-destructive/10 text-destructive"
               }`}
             >
               <Wallet className="size-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-1">
             <div
               className={`text-2xl font-bold tracking-tight font-mono ${
-                isCurrentPositive ? "text-foreground" : "text-destructive"
+                isTotalPositive ? "text-emerald-500" : "text-destructive"
               }`}
             >
-              {formatCurrency(currentBalance)}
+              {formatCurrency(totalBalanceWithPrevious)}
             </div>
-            <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-              <CheckCircle2 className="size-3 text-primary shrink-0" />
-              Acumulado até {monthName || "o mês"}
-            </p>
+            <div className="mt-2 pt-2 border-t border-border/60 text-[11px] text-muted-foreground space-y-0.5">
+              <div className="flex items-center justify-between">
+                <span>Sobra de {prevMonthName}:</span>
+                <span className="font-mono font-medium text-foreground">
+                  {accumulatedPreviousSurplus >= 0 ? "+" : ""}{formatCurrency(accumulatedPreviousSurplus)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Saldo de {monthName || "deste mês"}:</span>
+                <span className={`font-mono font-medium ${isProjectedPositive ? "text-primary" : "text-destructive"}`}>
+                  {isProjectedPositive ? "+" : ""}{formatCurrency(projectedEndBalance)}
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        {/* 2. RECEITAS */}
+        {/* 2. SALDO DO MÊS (RESULTADO LÍQUIDO DESTE MÊS) */}
         <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground">
-              Receitas
-            </CardTitle>
-            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <ArrowDownLeft className="size-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-primary font-mono">
-              {formatCurrency(income)}
-            </div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-              <Badge
-                variant="outline"
-                className={`text-[11px] px-1.5 py-0 gap-1 font-normal ${
-                  incomeChange >= 0
-                    ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-muted text-muted-foreground"
-                }`}
-              >
-                {incomeChange >= 0 ? (
-                  <TrendingUp className="size-3" />
-                ) : (
-                  <TrendingDown className="size-3" />
-                )}
-                {formatPercentage(incomeChange)}
-              </Badge>
-              <span className="text-[11px] text-muted-foreground">
-                vs {comp.prevMonthName}
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-semibold text-muted-foreground">
+                Saldo do Mês
+              </CardTitle>
+              <span className="text-[10px] text-muted-foreground block">
+                Receita - Despesa
               </span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 3. DESPESAS */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground">
-              Despesas
-            </CardTitle>
-            <div className="flex size-8 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-              <ArrowUpRight className="size-4" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold tracking-tight text-destructive font-mono">
-              {formatCurrency(expenses)}
-            </div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
-              {/* Para despesa, redução (negativo) é positivo para o usuário */}
-              <Badge
-                variant="outline"
-                className={`text-[11px] px-1.5 py-0 gap-1 font-normal ${
-                  expensesChange <= 0
-                    ? "border-primary/30 bg-primary/10 text-primary"
-                    : "border-destructive/30 bg-destructive/10 text-destructive"
-                }`}
-              >
-                {expensesChange <= 0 ? (
-                  <TrendingDown className="size-3" />
-                ) : (
-                  <TrendingUp className="size-3" />
-                )}
-                {formatPercentage(expensesChange)}
-              </Badge>
-              <span className="text-[11px] text-muted-foreground">
-                vs {comp.prevMonthName}
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 4. SALDO PROJETADO FIM DE MÊS (RECEITA - DESPESA) */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs font-semibold text-muted-foreground">
-              Saldo Projetado Fim de Mês
-            </CardTitle>
             <div
               className={`flex size-8 items-center justify-center rounded-lg ${
                 isProjectedPositive ? "bg-primary/10 text-primary" : "bg-destructive/10 text-destructive"
@@ -161,33 +111,135 @@ export function KpiCards({ kpis, year, monthName }: KpiCardsProps) {
               <Target className="size-4" />
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-1">
             <div
               className={`text-2xl font-bold tracking-tight font-mono ${
-                isProjectedPositive ? "text-primary" : "text-destructive"
+                isProjectedPositive ? "text-foreground" : "text-destructive"
               }`}
             >
               {formatCurrency(projectedEndBalance)}
             </div>
-            <div className="mt-1.5 flex items-center gap-1.5 text-xs">
+            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{isProjectedPositive ? "Superávit do mês" : "Déficit do mês"}</span>
               <Badge
                 variant="outline"
-                className={`text-[11px] px-1.5 py-0 gap-1 font-normal ${
+                className={`text-[10px] px-1 py-0 gap-0.5 font-normal ${
                   balanceChange >= 0
                     ? "border-primary/30 bg-primary/10 text-primary"
                     : "border-destructive/30 bg-destructive/10 text-destructive"
                 }`}
               >
-                {balanceChange >= 0 ? (
-                  <TrendingUp className="size-3" />
-                ) : (
-                  <TrendingDown className="size-3" />
-                )}
-                {formatPercentage(balanceChange)}
+                {balanceChange >= 0 ? "+" : ""}{balanceChange.toFixed(1)}% vs {prevMonthName}
               </Badge>
-              <span className="text-[11px] text-muted-foreground">
-                vs {comp.prevMonthName}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 3. SOBRA DO MÊS ANTERIOR */}
+        <Card className="border-border bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-semibold text-muted-foreground">
+                Sobra Mês Anterior
+              </CardTitle>
+              <span className="text-[10px] text-muted-foreground block">
+                {prevMonthName}
               </span>
+            </div>
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <PiggyBank className="size-4" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-1">
+            <div
+              className={`text-2xl font-bold tracking-tight font-mono ${
+                isPrevPositive ? "text-foreground" : "text-muted-foreground"
+              }`}
+            >
+              {formatCurrency(previousMonthSurplus)}
+            </div>
+            <div className="mt-2 pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
+              <span>Transferido de {prevMonthName}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 4. RECEITAS DO MÊS */}
+        <Card className="border-border bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-semibold text-muted-foreground">
+                Receitas
+              </CardTitle>
+              <span className="text-[10px] text-muted-foreground block">
+                Entradas em {monthName || "o mês"}
+              </span>
+            </div>
+            <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <ArrowDownLeft className="size-4" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-1">
+            <div className="text-2xl font-bold tracking-tight text-primary font-mono">
+              {formatCurrency(income)}
+            </div>
+            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>vs {prevMonthName}</span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-1 py-0 gap-0.5 font-normal ${
+                  incomeChange >= 0
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-muted text-muted-foreground"
+                }`}
+              >
+                {incomeChange >= 0 ? (
+                  <TrendingUp className="size-2.5" />
+                ) : (
+                  <TrendingDown className="size-2.5" />
+                )}
+                {formatPercentage(incomeChange)}
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 5. DESPESAS DO MÊS */}
+        <Card className="border-border bg-card shadow-xs">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1.5">
+            <div className="space-y-0.5">
+              <CardTitle className="text-xs font-semibold text-muted-foreground">
+                Despesas
+              </CardTitle>
+              <span className="text-[10px] text-muted-foreground block">
+                Saídas em {monthName || "o mês"}
+              </span>
+            </div>
+            <div className="flex size-8 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+              <ArrowUpRight className="size-4" />
+            </div>
+          </CardHeader>
+          <CardContent className="pt-1">
+            <div className="text-2xl font-bold tracking-tight text-destructive font-mono">
+              {formatCurrency(expenses)}
+            </div>
+            <div className="mt-2 pt-2 border-t border-border/60 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>vs {prevMonthName}</span>
+              <Badge
+                variant="outline"
+                className={`text-[10px] px-1 py-0 gap-0.5 font-normal ${
+                  expensesChange <= 0
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-destructive/30 bg-destructive/10 text-destructive"
+                }`}
+              >
+                {expensesChange <= 0 ? (
+                  <TrendingDown className="size-2.5" />
+                ) : (
+                  <TrendingUp className="size-2.5" />
+                )}
+                {formatPercentage(expensesChange)}
+              </Badge>
             </div>
           </CardContent>
         </Card>

@@ -6,6 +6,8 @@ export interface MonthData {
   expenses: number;
   balance: number;
   savingsRate: number;
+  previousBalance?: number;     // Saldo vindo do mês anterior
+  accumulatedBalance?: number;  // Saldo acumulado somando o mês anterior
 }
 
 export interface MonthComparison {
@@ -18,10 +20,14 @@ export interface MonthComparison {
 }
 
 export interface FinancialKPIs {
-  currentBalance: number;          // Saldo Atual
+  currentBalance: number;          // Saldo Total Acumulado (com Mês Anterior)
   totalIncome: number;             // Receitas
   totalExpenses: number;           // Despesas
-  projectedEndBalance: number;     // Saldo Projetado Fim de Mês (Receita - Despesa)
+  projectedEndBalance: number;     // Saldo do Mês Atual (Receita - Despesa)
+  previousMonthSurplus: number;    // O que sobrou do mês anterior imediato
+  accumulatedPreviousSurplus: number; // Saldo acumulado vindo de todos os meses anteriores
+  totalBalanceWithPrevious: number;// Saldo que tenho contando o que sobrou do mês anterior na soma
+  prevMonthName: string;           // Nome do mês anterior (ex: "Outubro")
   monthComparison: MonthComparison;// Economia do mês e comparação
   netBalance: number;
   savingsRate: number;

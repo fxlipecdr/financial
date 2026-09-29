@@ -34,6 +34,7 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
                 <th className="pb-3 font-medium">Receitas</th>
                 <th className="pb-3 font-medium">Gastos</th>
                 <th className="pb-3 font-medium">Saldo do Mês</th>
+                <th className="pb-3 font-medium">Saldo Acumulado</th>
                 <th className="pb-3 font-medium text-right">Resultado</th>
               </tr>
             </thead>
@@ -41,6 +42,8 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
               {months.map((m) => {
                 const isPositive = m.balance >= 0;
                 const isSelected = selectedMonth === m.monthIndex;
+                const accBalance = m.accumulatedBalance ?? m.balance;
+                const isAccPositive = accBalance >= 0;
 
                 return (
                   <tr
@@ -73,6 +76,11 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
                     <td className="py-3 font-mono">
                       <span className={`font-semibold ${isPositive ? "text-primary" : "text-destructive"}`}>
                         {formatCurrency(m.balance)}
+                      </span>
+                    </td>
+                    <td className="py-3 font-mono">
+                      <span className={`font-semibold ${isAccPositive ? "text-emerald-500" : "text-destructive"}`}>
+                        {formatCurrency(accBalance)}
                       </span>
                     </td>
                     <td className="py-3 text-right">
