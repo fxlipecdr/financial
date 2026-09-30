@@ -48,21 +48,21 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="size-2 rounded-full bg-primary" />
+              <span className="size-2 rounded-full bg-emerald-500" />
               Receitas:
             </span>
             <span className="font-medium text-card-foreground">{formatCurrency(income)}</span>
           </div>
           <div className="flex items-center justify-between gap-4">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <span className="size-2 rounded-full bg-destructive" />
+              <span className="size-2 rounded-full bg-rose-500" />
               Gastos:
             </span>
             <span className="font-medium text-card-foreground">{formatCurrency(expenses)}</span>
           </div>
           <div className="mt-1.5 pt-1.5 border-t border-border flex items-center justify-between gap-4">
             <span className="text-muted-foreground">Saldo Líquido:</span>
-            <span className={`font-semibold ${balance >= 0 ? "text-primary" : "text-destructive"}`}>
+            <span className={`font-semibold ${balance >= 0 ? "text-emerald-500" : "text-rose-500"}`}>
               {formatCurrency(balance)}
             </span>
           </div>
@@ -110,7 +110,7 @@ export function MonthlyChart({ months, year, selectedMonth, onSelectMonth }: Mon
             <BarChart
               data={months}
               margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
-              barGap={4}
+              barGap={6}
               onClick={(e) => {
                 if (e && typeof e.activeTooltipIndex === "number") {
                   onSelectMonth?.(e.activeTooltipIndex);
@@ -122,7 +122,7 @@ export function MonthlyChart({ months, year, selectedMonth, onSelectMonth }: Mon
                 strokeDasharray="3 3"
                 vertical={false}
                 stroke="var(--border)"
-                opacity={0.6}
+                opacity={0.4}
               />
               <XAxis
                 dataKey="monthName"
@@ -148,16 +148,16 @@ export function MonthlyChart({ months, year, selectedMonth, onSelectMonth }: Mon
               <Bar
                 dataKey="income"
                 name="Receitas"
-                fill="var(--primary)"
+                fill="#10b981"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={32}
+                maxBarSize={28}
               />
               <Bar
                 dataKey="expenses"
                 name="Gastos"
-                fill="var(--destructive)"
+                fill="#f43f5e"
                 radius={[4, 4, 0, 0]}
-                maxBarSize={32}
+                maxBarSize={28}
               />
             </BarChart>
           </ResponsiveContainer>

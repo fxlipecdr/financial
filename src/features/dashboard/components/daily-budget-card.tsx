@@ -10,8 +10,6 @@ import {
   Calendar,
   AlertTriangle,
   CheckCircle,
-  Coins,
-  TrendingUp,
   Receipt,
   Wallet,
   Clock,
@@ -42,7 +40,7 @@ export function DailyBudgetCard({
   const futureExpenses = txSummary.pendingExpenses;
   const pendingCount = txSummary.pendingCount;
 
-  // Modo de cálculo selecionado: Saldo em Conta (Opção 2 - padrão) ou Margem do Mês
+  // Modo de cálculo selecionado: Saldo em Conta (padrão) ou Margem do Mês
   const [mode, setMode] = React.useState<"account_balance" | "monthly_margin">("account_balance");
 
   // Cálculo com precisão decimal.js
@@ -73,28 +71,24 @@ export function DailyBudgetCard({
   const activeTotalFree = mode === "account_balance" ? netFreeToSpend : monthlyRemaining;
 
   return (
-    <Card className="relative overflow-hidden border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-md">
-      {/* GLOW DECORATIVO DE FUNDO */}
-      <div className="pointer-events-none absolute -right-16 -top-16 size-48 rounded-full bg-primary/10 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-16 -left-16 size-48 rounded-full bg-primary/5 blur-3xl" />
-
-      <CardContent className="p-5 sm:p-6 relative z-10">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-          {/* LADO ESQUERDO: TÍTULO, SELETOR DE MODO, FRASE E PIPELINE */}
+    <Card className="border-border/80 bg-card shadow-xs overflow-hidden">
+      <CardContent className="p-4 sm:p-5">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          {/* LADO PRINCIPAL: RECOMENDAÇÃO DE GASTO DIÁRIO */}
           <div className="space-y-3.5 flex-1">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <div className="flex size-9 items-center justify-center rounded-xl bg-primary/15 text-primary shadow-xs">
-                  <Sparkles className="size-4.5" />
+              <div className="flex items-center gap-2">
+                <div className="flex size-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="size-3.5" />
                 </div>
-                <h2 className="text-lg font-bold tracking-tight text-foreground">
+                <h2 className="text-xs font-bold text-foreground uppercase tracking-wider">
                   Quanto posso gastar?
                 </h2>
 
                 {isExceeded ? (
                   <Badge
                     variant="outline"
-                    className="border-destructive/40 bg-destructive/10 text-destructive text-xs gap-1"
+                    className="border-destructive/30 bg-destructive/10 text-destructive text-[11px] gap-1"
                   >
                     <AlertTriangle className="size-3" />
                     Orçamento Comprometido
@@ -102,29 +96,29 @@ export function DailyBudgetCard({
                 ) : isCurrentMonth ? (
                   <Badge
                     variant="outline"
-                    className="border-primary/30 bg-primary/10 text-primary text-xs gap-1 font-medium"
+                    className="border-border/60 bg-muted/40 text-muted-foreground text-[11px] gap-1 font-medium"
                   >
                     <Calendar className="size-3" />
-                    {daysRemaining} {daysRemaining === 1 ? "dia restante" : "dias restantes"} até o fim do mês
+                    {daysRemaining} {daysRemaining === 1 ? "dia restante" : "dias restantes"}
                   </Badge>
                 ) : isPastMonth ? (
-                  <Badge variant="outline" className="border-muted text-muted-foreground text-xs gap-1">
+                  <Badge variant="outline" className="border-border/60 text-muted-foreground text-[11px] gap-1">
                     <CheckCircle className="size-3" />
                     Mês Concluído
                   </Badge>
                 ) : (
                   <Badge
                     variant="outline"
-                    className="border-primary/30 bg-primary/10 text-primary text-xs gap-1"
+                    className="border-border/60 bg-muted/40 text-muted-foreground text-[11px] gap-1"
                   >
                     <Calendar className="size-3" />
-                    Planejamento para {monthName} ({totalDaysInMonth} dias)
+                    {monthName} ({totalDaysInMonth} dias)
                   </Badge>
                 )}
               </div>
 
-              {/* SELETOR DE MODO DE CÁLCULO */}
-              <div className="flex items-center rounded-lg border border-border bg-muted/60 p-0.5 text-[11px]">
+              {/* SELETOR DE MODO COMPACTO */}
+              <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setMode("account_balance")}
@@ -154,88 +148,34 @@ export function DailyBudgetCard({
               </div>
             </div>
 
-            {/* FRASE DE DESTAQUE COM VALOR AJUSTADO */}
-            {isExceeded ? (
-              <p className="text-sm text-destructive font-medium leading-relaxed">
-                Atenção: As contas futuras excedem o saldo disponível neste momento. Reduza gastos para restabelecer a segurança financeira.
-              </p>
-            ) : (
-              <p className="text-sm sm:text-base text-foreground font-normal leading-relaxed">
-                Você pode gastar{" "}
-                <strong className="font-semibold text-primary font-mono text-base sm:text-lg inline-block px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20">
-                  {formatCurrency(activeDaily)}/dia
-                </strong>{" "}
-                até o fim do mês sem ultrapassar seu orçamento.
-              </p>
-            )}
-
-            {/* PIPELINE DE CÁLCULO VISUAL (DETALHAMENTO TRANSPARENTE DOS 4 FATORES) */}
-            <div className="rounded-xl border border-border/80 bg-muted/30 p-3 text-xs">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div>
-                  <span className="text-[11px] text-muted-foreground block">
-                    {mode === "account_balance" ? "1. Saldo em Conta" : "1. Receita do Mês"}
-                  </span>
-                  <span className="font-mono font-semibold text-foreground">
-                    {formatCurrency(mode === "account_balance" ? currentBalance : income)}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[11px] text-muted-foreground block flex items-center gap-1">
-                    2. Contas Futuras
-                    <Clock className="size-2.5 text-amber-500" />
-                  </span>
-                  <span className="font-mono font-semibold text-amber-500">
-                    - {formatCurrency(futureExpenses)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground block">
-                    ({pendingCount} a vencer)
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[11px] text-muted-foreground block">
-                    3. Saldo Livre Total
-                  </span>
-                  <span className="font-mono font-semibold text-primary">
-                    = {formatCurrency(activeTotalFree)}
-                  </span>
-                </div>
-
-                <div>
-                  <span className="text-[11px] text-muted-foreground block">
-                    4. Dias Restantes
-                  </span>
-                  <span className="font-mono font-semibold text-foreground">
-                    ÷ {daysRemaining} dias
-                  </span>
-                  <span className="text-[10px] text-muted-foreground block">
-                    até {totalDaysInMonth}/{String(selectedMonth + 1).padStart(2, "0")}
-                  </span>
-                </div>
+            {/* DESTAQUE HERO DO VALOR POR DIA */}
+            <div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-primary">
+                  {formatCurrency(activeDaily)}
+                </span>
+                <span className="text-sm font-medium text-muted-foreground">/ dia</span>
               </div>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                {isExceeded ? (
+                  <span className="text-destructive font-medium">
+                    As contas futuras pendentes ultrapassam o saldo livre neste momento. Reduza saídas não essenciais.
+                  </span>
+                ) : (
+                  <>
+                    Você dispõe de <strong className="font-semibold text-foreground font-mono">{formatCurrency(activeTotalFree)}</strong> livres para os próximos <strong className="font-semibold text-foreground">{daysRemaining} dias</strong> sem comprometer sua reserva.
+                  </>
+                )}
+              </p>
             </div>
 
-            {/* BARRA DE PROGRESSO DE COMPROMETIMENTO */}
-            <div className="space-y-1.5 pt-0.5 max-w-xl">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-amber-500" />
-                  Contas a vencer:{" "}
-                  <strong className="text-foreground font-mono">
-                    {formatCurrency(futureExpenses)}
-                  </strong>
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="size-2 rounded-full bg-primary" />
-                  Disponível seguro:{" "}
-                  <strong className="text-foreground font-mono">
-                    {formatCurrency(activeTotalFree)}
-                  </strong>
-                </span>
+            {/* BARRA DE PROGRESSO ELEGANTE */}
+            <div className="space-y-1 pt-0.5 max-w-md">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono">
+                <span>Comprometido: {formatCurrency(futureExpenses)}</span>
+                <span>Livre: {formatCurrency(activeTotalFree)}</span>
               </div>
-              <div className="w-full bg-muted/80 rounded-full h-2 overflow-hidden p-0.5 border border-border">
+              <div className="w-full bg-muted/60 rounded-full h-1.5 overflow-hidden">
                 <div
                   className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${Math.max(5, 100 - committedPercentage)}%` }}
@@ -244,56 +184,48 @@ export function DailyBudgetCard({
             </div>
           </div>
 
-          {/* LADO DIREITO: RESUMO EM CARDS CONDENSADOS */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-2 gap-3 shrink-0 lg:w-72">
-            <div className="rounded-xl border border-border bg-card/60 p-3 shadow-2xs">
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                <Wallet className="size-3 text-primary" />
-                {mode === "account_balance" ? "Saldo em Conta" : "Receita Mensal"}
-              </span>
-              <p className="mt-1 text-base font-bold text-foreground font-mono">
-                {formatCurrency(mode === "account_balance" ? currentBalance : income)}
-              </p>
-            </div>
+          {/* LADO DIREITO: DEMONSTRATIVO DE CÁLCULO CONDENSADO */}
+          <div className="border-t lg:border-t-0 lg:border-l border-border/60 pt-4 lg:pt-0 lg:pl-6 shrink-0 lg:w-72">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+              Composição do Cálculo
+            </span>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center justify-between py-1 border-b border-border/40">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <Wallet className="size-3" />
+                  {mode === "account_balance" ? "Saldo Base" : "Receita Base"}
+                </span>
+                <span className="font-mono font-medium text-foreground">
+                  {formatCurrency(mode === "account_balance" ? currentBalance : income)}
+                </span>
+              </div>
 
-            <div className="rounded-xl border border-border bg-card/60 p-3 shadow-2xs">
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                <Clock className="size-3 text-amber-500" />
-                Contas a Vencer
-              </span>
-              <p className="mt-1 text-base font-bold text-amber-500 font-mono">
-                {formatCurrency(futureExpenses)}
-              </p>
-            </div>
+              <div className="flex items-center justify-between py-1 border-b border-border/40">
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="size-3 text-amber-500" />
+                  Contas Futuras ({pendingCount})
+                </span>
+                <span className="font-mono font-medium text-amber-500">
+                  - {formatCurrency(futureExpenses)}
+                </span>
+              </div>
 
-            <div className="rounded-xl border border-border bg-card/60 p-3 shadow-2xs">
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                <Coins className="size-3 text-primary" />
-                Livre para Gastar
-              </span>
-              <p className="mt-1 text-base font-bold text-foreground font-mono">
-                {formatCurrency(activeTotalFree)}
-              </p>
-            </div>
+              <div className="flex items-center justify-between py-1 border-b border-border/40">
+                <span className="text-muted-foreground">Saldo Livre</span>
+                <span className="font-mono font-semibold text-foreground">
+                  = {formatCurrency(activeTotalFree)}
+                </span>
+              </div>
 
-            <div className="rounded-xl border border-border bg-card/60 p-3 shadow-2xs">
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1 font-medium">
-                <Calendar className="size-3 text-primary" />
-                Dias Restantes
-              </span>
-              <p className="mt-1 text-base font-bold text-foreground font-mono">
-                {daysRemaining} {daysRemaining === 1 ? "dia" : "dias"}
-              </p>
-            </div>
-
-            <div className="col-span-2 rounded-xl border border-primary/20 bg-primary/5 p-3 shadow-2xs">
-              <span className="text-[11px] text-primary flex items-center gap-1 font-semibold">
-                <TrendingUp className="size-3" />
-                Disponível por Dia
-              </span>
-              <p className="mt-1 text-base font-bold text-primary font-mono">
-                {formatCurrency(activeDaily)} / dia
-              </p>
+              <div className="flex items-center justify-between py-1 text-primary">
+                <span className="font-medium flex items-center gap-1">
+                  Disponível por dia
+                  <ArrowRight className="size-3" />
+                </span>
+                <span className="font-mono font-bold">
+                  {formatCurrency(activeDaily)}
+                </span>
+              </div>
             </div>
           </div>
         </div>

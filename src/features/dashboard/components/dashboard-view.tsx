@@ -169,66 +169,6 @@ export function DashboardView() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* SELETOR DE PERÍODO (MÊS E ANO NO HEADER) */}
-            {activeTab === "dashboard" && (
-              <div className="flex items-center gap-1.5">
-                <div className="hidden sm:flex items-center rounded-lg border border-border bg-card p-0.5 shadow-xs">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={handlePrevMonth}
-                    title="Mês anterior"
-                    className="size-7 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronLeft className="size-3.5" />
-                  </Button>
-
-                  <Select
-                    value={String(selectedMonth)}
-                    onValueChange={(val) => handleSelectMonth(Number(val))}
-                  >
-                    <SelectTrigger className="h-7 min-w-[96px] border-0 bg-transparent px-2 text-xs font-semibold focus:ring-0">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONTH_NAMES.map((m, idx) => (
-                        <SelectItem key={idx} value={String(idx)} className="text-xs">
-                          {m.full}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={handleNextMonth}
-                    title="Próximo mês"
-                    className="size-7 text-muted-foreground hover:text-foreground"
-                  >
-                    <ChevronRight className="size-3.5" />
-                  </Button>
-                </div>
-
-                <Select
-                  value={String(currentYear)}
-                  onValueChange={(val) => handleSelectYear(Number(val))}
-                >
-                  <SelectTrigger className="h-8 w-22 text-xs font-medium">
-                    <SelectValue placeholder="Ano" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {dynamicYears.map((y) => (
-                      <SelectItem key={y} value={String(y)} className="text-xs">
-                        {y}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             {/* USUÁRIO ATIVO */}
             {currentUser && (
@@ -355,52 +295,48 @@ export function DashboardView() {
       <main className="mx-auto max-w-7xl w-full flex-1 px-4 py-6 sm:px-6">
         {activeTab === "dashboard" ? (
           <div className="space-y-6">
-            {/* CABEÇALHO DO DASHBOARD COM CONTROLES DE MÊS */}
-            <div className="space-y-4">
+            {/* CABEÇALHO DO DASHBOARD COM NAVEGAÇÃO DE ANO */}
+            <div className="space-y-3.5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                      Dashboard Anual
+                  <div className="flex items-center gap-2.5">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+                      Visão Geral
                     </h1>
-                    <Badge
-                      variant="outline"
-                      className="border-primary/30 bg-primary/10 text-primary font-medium text-xs px-2.5 py-0.5"
-                    >
-                      {currentMonthData.monthFullName} / {currentYear}
-                    </Badge>
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                      {currentMonthData.monthFullName} de {currentYear}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Acompanhamento de receitas, gastos e saldo mês a mês para o ano de {currentYear}.
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Acompanhamento de fluxo de caixa, receitas, gastos e saldo acumulado.
                   </p>
                 </div>
 
-                {/* CONTROLES DE MÊS E ANO */}
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <div className="flex items-center rounded-lg border border-border bg-card p-0.5 shadow-xs">
+                {/* CONTROLE DE ANO ELEGANTE */}
+                <div className="flex items-center gap-1 self-start sm:self-auto">
+                  <div className="flex items-center rounded-lg border border-border/80 bg-card p-0.5 shadow-2xs">
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon-xs"
-                      onClick={handlePrevMonth}
-                      title="Mês anterior"
+                      onClick={() => handleSelectYear(currentYear - 1)}
+                      title="Ano anterior"
                       className="size-7 text-muted-foreground hover:text-foreground"
                     >
-                      <ChevronLeft className="size-4" />
+                      <ChevronLeft className="size-3.5" />
                     </Button>
 
                     <Select
-                      value={String(selectedMonth)}
-                      onValueChange={(val) => handleSelectMonth(Number(val))}
+                      value={String(currentYear)}
+                      onValueChange={(val) => handleSelectYear(Number(val))}
                     >
-                      <SelectTrigger className="h-7 min-w-[110px] border-0 bg-transparent px-2.5 text-xs font-semibold focus:ring-0">
-                        <Calendar className="size-3.5 mr-1.5 text-primary shrink-0" />
+                      <SelectTrigger className="h-7 w-20 border-0 bg-transparent px-2 text-xs font-bold focus:ring-0">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {MONTH_NAMES.map((m, idx) => (
-                          <SelectItem key={idx} value={String(idx)} className="text-xs">
-                            {m.full}
+                        {dynamicYears.map((y) => (
+                          <SelectItem key={y} value={String(y)} className="text-xs font-medium">
+                            {y}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -410,51 +346,37 @@ export function DashboardView() {
                       type="button"
                       variant="ghost"
                       size="icon-xs"
-                      onClick={handleNextMonth}
-                      title="Próximo mês"
+                      onClick={() => handleSelectYear(currentYear + 1)}
+                      title="Próximo ano"
                       className="size-7 text-muted-foreground hover:text-foreground"
                     >
-                      <ChevronRight className="size-4" />
+                      <ChevronRight className="size-3.5" />
                     </Button>
                   </div>
-
-                  <Select
-                    value={String(currentYear)}
-                    onValueChange={(val) => handleSelectYear(Number(val))}
-                  >
-                    <SelectTrigger className="h-8 w-22 text-xs font-medium">
-                      <SelectValue placeholder="Ano" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {dynamicYears.map((y) => (
-                        <SelectItem key={y} value={String(y)} className="text-xs">
-                          {y}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
-              {/* SELETOR DE MÊS EM ABAS / PILLS (12 MESES) */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-                {MONTH_NAMES.map((m, idx) => {
-                  const isSelected = selectedMonth === idx;
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleSelectMonth(idx)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                          : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                      }`}
-                    >
-                      {m.short}
-                    </button>
-                  );
-                })}
+              {/* SELETOR DE MÊS SEGMENTADO (12 MESES MODERNOS) */}
+              <div className="rounded-xl border border-border/70 bg-card/60 p-1 shadow-2xs">
+                <div className="grid grid-cols-6 sm:grid-cols-12 gap-1">
+                  {MONTH_NAMES.map((m, idx) => {
+                    const isSelected = selectedMonth === idx;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectMonth(idx)}
+                        className={`relative flex items-center justify-center py-2 px-1 rounded-lg text-xs font-medium transition-all ${
+                          isSelected
+                            ? "bg-primary text-primary-foreground shadow-xs font-bold"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        }`}
+                      >
+                        <span>{m.short}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 

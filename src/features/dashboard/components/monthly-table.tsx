@@ -74,12 +74,12 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
                       {formatCurrency(m.expenses)}
                     </td>
                     <td className="py-3 font-mono">
-                      <span className={`font-semibold ${isPositive ? "text-primary" : "text-destructive"}`}>
+                      <span className={`font-semibold ${isPositive ? "text-emerald-500" : "text-rose-500"}`}>
                         {formatCurrency(m.balance)}
                       </span>
                     </td>
                     <td className="py-3 font-mono">
-                      <span className={`font-semibold ${isAccPositive ? "text-emerald-500" : "text-destructive"}`}>
+                      <span className={`font-semibold ${isAccPositive ? "text-emerald-500" : "text-rose-500"}`}>
                         {formatCurrency(accBalance)}
                       </span>
                     </td>
@@ -87,7 +87,7 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
                       {isPositive ? (
                         <Badge
                           variant="outline"
-                          className="border-primary/30 bg-primary/10 text-primary gap-1"
+                          className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-0 text-[10px] gap-1 font-medium"
                         >
                           <ArrowUpRight className="size-3" />
                           Superávit
@@ -95,7 +95,7 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: Mon
                       ) : (
                         <Badge
                           variant="outline"
-                          className="border-destructive/30 bg-destructive/10 text-destructive gap-1"
+                          className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-0 text-[10px] gap-1 font-medium"
                         >
                           <ArrowDownRight className="size-3" />
                           Déficit
