@@ -36,11 +36,13 @@ import {
   ChevronRight,
   Bot,
   Zap,
+  FileText,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { CategoryManagerDialog } from "@/features/categories/components/category-manager-dialog";
 import { CloudSyncDialog } from "@/features/sync/components/cloud-sync-dialog";
 import { DebtPayoffDialog } from "@/features/transactions/components/debt-payoff-dialog";
+import { FinancialReportDialog } from "@/features/reports/components/financial-report-dialog";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function DashboardView() {
@@ -48,6 +50,7 @@ export function DashboardView() {
   const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const [cloudSyncOpen, setCloudSyncOpen] = React.useState(false);
   const [payoffDialogOpen, setPayoffDialogOpen] = React.useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = React.useState(false);
   const isCloudConfigured = isSupabaseConfigured();
 
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -180,6 +183,19 @@ export function DashboardView() {
                 <span className="font-medium text-foreground">{currentUser.name}</span>
               </div>
             )}
+
+            {/* BOTÃO EMITIR RELATÓRIO PDF */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setReportDialogOpen(true)}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8"
+              title="Emitir Relatório em PDF com todos os meses, receitas, despesas e lançamentos"
+            >
+              <FileText className="size-3.5 text-blue-500" />
+              <span className="hidden sm:inline">Relatório PDF</span>
+            </Button>
 
             {/* BOTÃO SIMULADOR DE QUITAÇÃO (BOLA DE NEVE) */}
             <Button
@@ -428,6 +444,7 @@ export function DashboardView() {
               year={currentYear}
               selectedMonth={selectedMonth}
               onSelectMonth={handleSelectMonth}
+              onOpenReportDialog={() => setReportDialogOpen(true)}
             />
           </div>
         ) : activeTab === "transactions" ? (
@@ -456,6 +473,14 @@ export function DashboardView() {
         open={payoffDialogOpen}
         onOpenChange={setPayoffDialogOpen}
         defaultAmount={2500}
+      />
+
+      {/* MODAL EMISSÃO DE RELATÓRIO PDF */}
+      <FinancialReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        defaultYear={currentYear}
+        defaultMonth={selectedMonth}
       />
     </div>
   );

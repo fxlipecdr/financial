@@ -23,12 +23,14 @@ import {
   Wallet,
   Tags,
   Zap,
+  FileText,
 } from "lucide-react";
 
 import { useDashboardStore, getAvailableYears } from "@/features/dashboard/stores/dashboard.store";
 import { useCategoryStore } from "@/features/categories/stores/category.store";
 import { CategoryManagerDialog } from "@/features/categories/components/category-manager-dialog";
 import { DebtPayoffDialog } from "./debt-payoff-dialog";
+import { FinancialReportDialog } from "@/features/reports/components/financial-report-dialog";
 
 const MONTHS_LABELS = [
   "Janeiro",
@@ -60,6 +62,7 @@ export function TransactionsView() {
   useCategoryStore((state) => state.categories);
   const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const [payoffDialogOpen, setPayoffDialogOpen] = React.useState(false);
+  const [reportDialogOpen, setReportDialogOpen] = React.useState(false);
 
   const availableYears = React.useMemo(() => {
     return getAvailableYears(allTransactions, selectedYear);
@@ -199,6 +202,19 @@ export function TransactionsView() {
             <span className="hidden sm:inline">Simular Quitação</span>
           </Button>
 
+          {/* BOTÃO EMITIR RELATÓRIO PDF */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setReportDialogOpen(true)}
+            className="text-xs gap-1.5"
+            title="Emitir Relatório em PDF com todos os meses e lançamentos"
+          >
+            <FileText className="size-3.5 text-blue-500" />
+            <span className="hidden sm:inline">Relatório PDF</span>
+          </Button>
+
           {/* BOTÃO MODAL DE NOVO LANÇAMENTO */}
           <TransactionForm
             defaultDate={`${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-15`}
@@ -302,6 +318,14 @@ export function TransactionsView() {
         open={payoffDialogOpen}
         onOpenChange={setPayoffDialogOpen}
         defaultAmount={2500}
+      />
+
+      {/* MODAL EMISSÃO DE RELATÓRIO PDF */}
+      <FinancialReportDialog
+        open={reportDialogOpen}
+        onOpenChange={setReportDialogOpen}
+        defaultYear={selectedYear}
+        defaultMonth={selectedMonth}
       />
     </div>
   );

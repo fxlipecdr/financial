@@ -3,3 +3,4 @@ allowBuilds:
   protobufjs: true
   unrs-resolver: true
   napi-postinstall: true
+  core-js: true

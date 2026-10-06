@@ -5,25 +5,45 @@ import { MonthData } from "../types/dashboard.types";
 import { formatCurrency } from "../lib/financial-math";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowUpRight, ArrowDownRight, FileText } from "lucide-react";
 
 interface MonthlyTableProps {
   months: MonthData[];
   year: number;
   selectedMonth?: number;
   onSelectMonth?: (monthIndex: number) => void;
+  onOpenReportDialog?: () => void;
 }
 
-export function MonthlyTable({ months, year, selectedMonth, onSelectMonth }: MonthlyTableProps) {
+export function MonthlyTable({ months, year, selectedMonth, onSelectMonth, onOpenReportDialog }: MonthlyTableProps) {
   return (
     <Card className="border-border bg-card">
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-foreground">
-          Detalhamento Mês a Mês ({year})
-        </CardTitle>
-        <CardDescription className="text-xs text-muted-foreground">
-          Valores consolidados de receitas, despesas e balanço líquido mensal. Clique na linha de um mês para selecioná-lo.
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <CardTitle className="text-base font-semibold text-foreground">
+              Detalhamento Mês a Mês ({year})
+            </CardTitle>
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
+              Valores consolidados de receitas, despesas e balanço líquido mensal. Clique na linha de um mês para selecioná-lo.
+            </CardDescription>
+          </div>
+
+          {onOpenReportDialog && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onOpenReportDialog}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 self-start sm:self-auto shrink-0"
+              title="Emitir Relatório em PDF com todos os meses e lançamentos"
+            >
+              <FileText className="size-3.5 text-blue-500" />
+              <span>Emitir Relatório PDF</span>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
