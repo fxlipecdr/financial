@@ -5,6 +5,7 @@ import { formatCurrency, calculateDailySpending } from "../lib/financial-math";
 import { useTransactionStore } from "@/features/transactions/stores/transaction.store";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Sparkles,
   Calendar,
@@ -14,6 +15,7 @@ import {
   Wallet,
   Clock,
   ArrowRight,
+  Zap,
 } from "lucide-react";
 
 interface DailyBudgetCardProps {
@@ -23,6 +25,7 @@ interface DailyBudgetCardProps {
   selectedMonth: number;
   selectedYear: number;
   monthName: string;
+  onOpenPayoffDialog?: () => void;
 }
 
 export function DailyBudgetCard({
@@ -32,6 +35,7 @@ export function DailyBudgetCard({
   selectedMonth,
   selectedYear,
   monthName,
+  onOpenPayoffDialog,
 }: DailyBudgetCardProps) {
   // Conexão com os lançamentos para apurar contas futuras a pagar (status: pending)
   const getMonthlySummary = useTransactionStore((state) => state.getMonthlySummary);
@@ -117,8 +121,24 @@ export function DailyBudgetCard({
                 )}
               </div>
 
-              {/* SELETOR DE MODO COMPACTO */}
-              <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 text-xs">
+              <div className="flex items-center gap-2">
+                {/* ATALHO PARA O SIMULADOR DE QUITAÇÃO BOLA DE NEVE */}
+                {onOpenPayoffDialog && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={onOpenPayoffDialog}
+                    className="h-7 text-xs gap-1 border-primary/30 text-primary hover:bg-primary/10 shadow-2xs"
+                    title="Simular quitação antecipada e quanto vai liberar mês a mês"
+                  >
+                    <Zap className="size-3 text-amber-500" />
+                    <span className="hidden sm:inline">Simular Quitação</span>
+                  </Button>
+                )}
+
+                {/* SELETOR DE MODO COMPACTO */}
+                <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setMode("account_balance")}
@@ -147,6 +167,7 @@ export function DailyBudgetCard({
                 </button>
               </div>
             </div>
+          </div>
 
             {/* DESTAQUE HERO DO VALOR POR DIA */}
             <div>

@@ -35,16 +35,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Bot,
+  Zap,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { CategoryManagerDialog } from "@/features/categories/components/category-manager-dialog";
 import { CloudSyncDialog } from "@/features/sync/components/cloud-sync-dialog";
+import { DebtPayoffDialog } from "@/features/transactions/components/debt-payoff-dialog";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 
 export function DashboardView() {
   const [activeTab, setActiveTab] = React.useState<"dashboard" | "transactions" | "budget" | "assistant">("dashboard");
   const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
   const [cloudSyncOpen, setCloudSyncOpen] = React.useState(false);
+  const [payoffDialogOpen, setPayoffDialogOpen] = React.useState(false);
   const isCloudConfigured = isSupabaseConfigured();
 
   const currentUser = useAuthStore((state) => state.currentUser);
@@ -177,6 +180,19 @@ export function DashboardView() {
                 <span className="font-medium text-foreground">{currentUser.name}</span>
               </div>
             )}
+
+            {/* BOTÃO SIMULADOR DE QUITAÇÃO (BOLA DE NEVE) */}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setPayoffDialogOpen(true)}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8"
+              title="Simulador de Quitação de Dívidas (Método Bola de Neve)"
+            >
+              <Zap className="size-3.5 text-amber-500" />
+              <span className="hidden sm:inline">Quitação</span>
+            </Button>
 
             {/* BOTÃO CONFIGURAR CATEGORIAS GLOBAIS */}
             <Button
@@ -395,6 +411,7 @@ export function DashboardView() {
               selectedMonth={selectedMonth}
               selectedYear={currentYear}
               monthName={currentMonthData.monthFullName}
+              onOpenPayoffDialog={() => setPayoffDialogOpen(true)}
             />
 
             {/* GRÁFICO COMPARATIVO MÊS A MÊS */}
@@ -432,6 +449,13 @@ export function DashboardView() {
       <CloudSyncDialog
         open={cloudSyncOpen}
         onOpenChange={setCloudSyncOpen}
+      />
+
+      {/* MODAL SIMULADOR DE QUITAÇÃO (BOLA DE NEVE) */}
+      <DebtPayoffDialog
+        open={payoffDialogOpen}
+        onOpenChange={setPayoffDialogOpen}
+        defaultAmount={2500}
       />
     </div>
   );

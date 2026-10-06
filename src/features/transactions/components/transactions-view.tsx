@@ -22,11 +22,13 @@ import {
   TrendingDown,
   Wallet,
   Tags,
+  Zap,
 } from "lucide-react";
 
 import { useDashboardStore, getAvailableYears } from "@/features/dashboard/stores/dashboard.store";
 import { useCategoryStore } from "@/features/categories/stores/category.store";
 import { CategoryManagerDialog } from "@/features/categories/components/category-manager-dialog";
+import { DebtPayoffDialog } from "./debt-payoff-dialog";
 
 const MONTHS_LABELS = [
   "Janeiro",
@@ -57,6 +59,7 @@ export function TransactionsView() {
   const allTransactions = useTransactionStore((state) => state.transactions);
   useCategoryStore((state) => state.categories);
   const [categoryManagerOpen, setCategoryManagerOpen] = React.useState(false);
+  const [payoffDialogOpen, setPayoffDialogOpen] = React.useState(false);
 
   const availableYears = React.useMemo(() => {
     return getAvailableYears(allTransactions, selectedYear);
@@ -183,6 +186,19 @@ export function TransactionsView() {
             <span className="hidden sm:inline">Categorias</span>
           </Button>
 
+          {/* BOTÃO SIMULADOR DE QUITAÇÃO (BOLA DE NEVE) */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPayoffDialogOpen(true)}
+            className="text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+            title="Simular quitação antecipada e liberação de gastos mês a mês (Método Bola de Neve)"
+          >
+            <Zap className="size-3.5 text-amber-500" />
+            <span className="hidden sm:inline">Simular Quitação</span>
+          </Button>
+
           {/* BOTÃO MODAL DE NOVO LANÇAMENTO */}
           <TransactionForm
             defaultDate={`${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}-15`}
@@ -279,6 +295,13 @@ export function TransactionsView() {
       <CategoryManagerDialog
         open={categoryManagerOpen}
         onOpenChange={setCategoryManagerOpen}
+      />
+
+      {/* MODAL SIMULADOR DE QUITAÇÃO (BOLA DE NEVE) */}
+      <DebtPayoffDialog
+        open={payoffDialogOpen}
+        onOpenChange={setPayoffDialogOpen}
+        defaultAmount={2500}
       />
     </div>
   );
