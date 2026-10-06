@@ -26,8 +26,10 @@ export interface DebtPayoffOptions {
   availableAmount: number;
   transactions: Transaction[];
   mode?: "by_debt" | "by_transaction";
-  scope?: "all_pending" | "selected_month";
-  selectedMonth?: number; // 0-11
+  scope?: "from_start_month" | "selected_month" | "all_pending";
+  startMonth?: number; // 0-11 (ex: 9 = Outubro)
+  startYear?: number;
+  selectedMonth?: number; // mantido para compatibilidade
   selectedYear?: number;
 }
 
@@ -39,7 +41,10 @@ export interface DebtPayoffResult {
   debtsPaidCount: number;
   totalTransactionsCount: number;
   transactionsPaidCount: number;
+  startMonthKey: string;
+  startMonthLabel: string;
   immediateMonthlyRelief: number;
+  startMonthRelief: number;
   averageMonthlyRelief: number;
   totalFreedAcrossAllMonths: number;
   paidDebts: DebtItem[];
@@ -53,12 +58,12 @@ export interface DebtPayoffResult {
   paidTransactionIds: string[];
 }
 
-const MONTH_NAMES = [
+export const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
 ];
 
-function getMonthLabel(monthKey: string): string {
+export function getMonthLabel(monthKey: string): string {
   const [yearStr, monthStr] = monthKey.split("-");
   const monthIdx = parseInt(monthStr, 10) - 1;
   const name = MONTH_NAMES[monthIdx] || monthStr;
@@ -67,28 +72,52 @@ function getMonthLabel(monthKey: string): string {
 
 /**
  * Simula a quitação de dívidas/lançamentos priorizando os menores valores até os maiores (Método Bola de Neve),
- * calculando exatamente quantos lançamentos são quitados e quanto dinheiro é liberado mês a mês no orçamento.
+ * calculando exatamente quantos lançamentos são quitados e quanto dinheiro é liberado mês a mês no orçamento
+ * a partir de um mês de referência especificado ("daqui para frente").
  */
 export function calculateDebtPayoff({
   availableAmount,
   transactions,
   mode = "by_debt",
-  scope = "all_pending",
+  scope = "from_start_month",
+  startMonth,
+  startYear,
   selectedMonth,
   selectedYear,
 }: DebtPayoffOptions): DebtPayoffResult {
   const availableDec = new Decimal(Math.max(0, availableAmount || 0));
+
+  const now = new Date();
+  const effectiveMonth =
+    startMonth !== undefined
+      ? startMonth
+      : selectedMonth !== undefined
+      ? selectedMonth
+      : now.getMonth();
+  const effectiveYear =
+    startYear !== undefined
+      ? startYear
+      : selectedYear !== undefined
+      ? selectedYear
+      : now.getFullYear();
+
+  const startMonthKey = `${effectiveYear}-${String(effectiveMonth + 1).padStart(2, "0")}`;
+  const startMonthLabel = getMonthLabel(startMonthKey);
 
   // 1. Filtra despesas pendentes
   let pendingTxs = transactions.filter(
     (tx) => tx.type === "expense" && tx.status === "pending"
   );
 
-  // Se o escopo for apenas o mês selecionado
-  if (scope === "selected_month" && selectedMonth !== undefined && selectedYear !== undefined) {
-    const monthPrefix = `${selectedYear}-${String(selectedMonth + 1).padStart(2, "0")}`;
-    pendingTxs = pendingTxs.filter((tx) => tx.date.startsWith(monthPrefix));
+  // Filtro temporal
+  if (scope === "selected_month") {
+    // Apenas o mês especificado
+    pendingTxs = pendingTxs.filter((tx) => tx.date.startsWith(startMonthKey));
+  } else if (scope === "from_start_month" || scope === undefined) {
+    // A partir do mês especificado em diante ("daqui para frente")
+    pendingTxs = pendingTxs.filter((tx) => tx.date.slice(0, 7) >= startMonthKey);
   }
+  // Se scope === "all_pending", não filtra por data
 
   // 2. Agrupamento ou lista individual
   let debtItems: DebtItem[] = [];
@@ -208,6 +237,8 @@ export function calculateDebtPayoff({
   // 5. Cálculo do Alívio Mês a Mês
   // Coleta todos os meses presentes nas transações pendentes
   const monthKeySet = new Set<string>();
+  // Inclui sempre o mês de início selecionado para garantir referência visual clara
+  monthKeySet.add(startMonthKey);
   for (const tx of pendingTxs) {
     monthKeySet.add(tx.date.slice(0, 7));
   }
@@ -245,9 +276,14 @@ export function calculateDebtPayoff({
     });
   }
 
-  // Alívio mensal imediato (primeiro mês ativo com economia)
+  // Alívio especificamente no mês inicial selecionado
+  const startMonthObj = monthlyReliefTimeline.find((m) => m.monthKey === startMonthKey);
+  const startMonthRelief = startMonthObj ? startMonthObj.amountFreed : 0;
+
+  // Alívio mensal imediato (no mês inicial ou no primeiro mês ativo com economia)
   const firstMonthWithFreed = monthlyReliefTimeline.find((m) => m.amountFreed > 0);
-  const immediateMonthlyRelief = firstMonthWithFreed ? firstMonthWithFreed.amountFreed : 0;
+  const immediateMonthlyRelief =
+    startMonthRelief > 0 ? startMonthRelief : (firstMonthWithFreed ? firstMonthWithFreed.amountFreed : 0);
 
   // Média mensal liberada
   const monthsWithRelief = monthlyReliefTimeline.filter((m) => m.amountFreed > 0);
@@ -270,7 +306,10 @@ export function calculateDebtPayoff({
     debtsPaidCount: paidDebts.length,
     totalTransactionsCount: pendingTxs.length,
     transactionsPaidCount,
+    startMonthKey,
+    startMonthLabel,
     immediateMonthlyRelief,
+    startMonthRelief,
     averageMonthlyRelief,
     totalFreedAcrossAllMonths: totalFreedAcrossAllMonthsDec.toNumber(),
     paidDebts,

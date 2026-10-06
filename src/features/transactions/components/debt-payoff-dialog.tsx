@@ -15,8 +15,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Zap,
-  TrendingDown,
   Wallet,
   CheckCircle2,
   Calendar,
@@ -25,13 +31,11 @@ import {
   ArrowRight,
   ShieldCheck,
   RotateCcw,
-  AlertCircle,
-  HelpCircle,
+  Info,
 } from "lucide-react";
 import { useTransactionStore } from "../stores/transaction.store";
 import { useCategoryStore } from "@/features/categories/stores/category.store";
-import { useDashboardStore } from "@/features/dashboard/stores/dashboard.store";
-import { calculateDebtPayoff } from "../lib/debt-payoff";
+import { calculateDebtPayoff, MONTH_NAMES } from "../lib/debt-payoff";
 import { formatCurrency } from "@/features/dashboard/lib/financial-math";
 
 interface DebtPayoffDialogProps {
@@ -51,12 +55,36 @@ export function DebtPayoffDialog({
   const selectedYear = useTransactionStore((state) => state.selectedYear);
   const getCategory = useCategoryStore((state) => state.getCategoryById);
 
+  // Mês e ano atual do calendário (ex: Outubro de 2026)
+  const currentCalendarMonth = React.useMemo(() => new Date().getMonth(), []);
+  const currentCalendarYear = React.useMemo(() => new Date().getFullYear(), []);
+
   // Valor digitado pelo usuário (padrão 2500 conforme pedido)
   const [amountStr, setAmountStr] = React.useState<string>(String(defaultAmount));
   const [mode, setMode] = React.useState<"by_debt" | "by_transaction">("by_debt");
-  const [scope, setScope] = React.useState<"all_pending" | "selected_month">("all_pending");
+
+  // Ponto de partida temporal: a partir de qual mês liberar daqui para frente
+  const [startMonth, setStartMonth] = React.useState<number>(currentCalendarMonth);
+  const [startYear, setStartYear] = React.useState<number>(currentCalendarYear);
+  const [scope, setScope] = React.useState<"from_start_month" | "selected_month">("from_start_month");
+
   const [activeTab, setActiveTab] = React.useState<"timeline" | "list">("timeline");
   const [confirmingApply, setConfirmingApply] = React.useState(false);
+
+  // Anos disponíveis calculados a partir das transações cadastradas
+  const availableYears = React.useMemo(() => {
+    const currentY = new Date().getFullYear();
+    const yearSet = new Set<number>([currentY, currentY + 1, currentY + 2, currentY + 3]);
+    transactions.forEach((tx) => {
+      if (tx?.date) {
+        const y = parseInt(tx.date.substring(0, 4), 10);
+        if (!isNaN(y) && y >= 2024 && y <= 2035) {
+          yearSet.add(y);
+        }
+      }
+    });
+    return Array.from(yearSet).sort((a, b) => a - b);
+  }, [transactions]);
 
   // Parse do valor numérico
   const numericAmount = React.useMemo(() => {
@@ -65,24 +93,24 @@ export function DebtPayoffDialog({
     return isNaN(val) ? 0 : val;
   }, [amountStr]);
 
-  // Executa o cálculo da simulação
+  // Executa o cálculo da simulação com precisão decimal
   const result = React.useMemo(() => {
     return calculateDebtPayoff({
       availableAmount: numericAmount,
       transactions,
       mode,
       scope,
-      selectedMonth,
-      selectedYear,
+      startMonth,
+      startYear,
     });
-  }, [numericAmount, transactions, mode, scope, selectedMonth, selectedYear]);
+  }, [numericAmount, transactions, mode, scope, startMonth, startYear]);
 
-  // Preset buttons
+  // Atalhos de valores
   const handleSetAmount = (val: number) => {
     setAmountStr(String(val));
   };
 
-  // Efetivar a quitação na prática
+  // Efetivar a quitação na prática no sistema
   const handleApplyPayoff = () => {
     if (result.paidTransactionIds.length === 0) {
       toast.error("Nenhum lançamento selecionado para quitação.");
@@ -95,7 +123,7 @@ export function DebtPayoffDialog({
       });
 
       toast.success("🎉 Quitação efetuada com sucesso!", {
-        description: `${result.transactionsPaidCount} lançamentos marcados como pagos. Você liberou ${formatCurrency(result.immediateMonthlyRelief)} no próximo mês!`,
+        description: `${result.transactionsPaidCount} lançamentos a partir de ${result.startMonthLabel} marcados como pagos. Alívio de ${formatCurrency(result.immediateMonthlyRelief)} no orçamento!`,
       });
 
       setConfirmingApply(false);
@@ -122,41 +150,42 @@ export function DebtPayoffDialog({
                 </Badge>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Descubra quantos lançamentos você pode liquidar com um valor extra e quanto fluxo de caixa será liberado mês a mês.
+                Simule quanto você libera mês a mês daqui para frente ao aportar um valor a partir de um mês de referência.
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          {/* SEÇÃO 1: INPUT DO VALOR E ATALHOS */}
-          <div className="rounded-xl border border-border/80 bg-card/60 p-3.5 space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
-                <Wallet className="size-3.5 text-primary" />
-                Valor Disponível para Quitação (R$)
-              </label>
+          {/* SEÇÃO 1: CONFIGURAÇÃO DE PARÂMETROS */}
+          <div className="rounded-xl border border-border/80 bg-card/60 p-3.5 space-y-3.5 shadow-2xs">
+            {/* LINHA A: VALOR DISPONÍVEL E ATALHOS */}
+            <div className="space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Wallet className="size-3.5 text-primary" />
+                  Valor Disponível para Quitação (R$)
+                </label>
 
-              {/* ATALHOS DE VALORES */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] text-muted-foreground mr-1">Atalhos:</span>
-                {[500, 1000, 2500, 5000].map((preset) => (
-                  <Button
-                    key={preset}
-                    type="button"
-                    variant={numericAmount === preset ? "default" : "outline"}
-                    size="sm"
-                    className="h-7 px-2.5 text-xs font-mono font-medium"
-                    onClick={() => handleSetAmount(preset)}
-                  >
-                    R$ {preset.toLocaleString("pt-BR")}
-                  </Button>
-                ))}
+                {/* ATALHOS DE VALORES */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[11px] text-muted-foreground mr-1">Atalhos:</span>
+                  {[500, 1000, 2500, 5000].map((preset) => (
+                    <Button
+                      key={preset}
+                      type="button"
+                      variant={numericAmount === preset ? "default" : "outline"}
+                      size="sm"
+                      className="h-7 px-2.5 text-xs font-mono font-medium"
+                      onClick={() => handleSetAmount(preset)}
+                    >
+                      R$ {preset.toLocaleString("pt-BR")}
+                    </Button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1">
+              <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground font-mono">
                   R$
                 </span>
@@ -170,42 +199,145 @@ export function DebtPayoffDialog({
                   className="pl-10 text-base font-bold font-mono tracking-tight h-10 border-border/80 focus-visible:ring-primary"
                 />
               </div>
+            </div>
 
-              {/* SELETOR DE ESTRATÉGIA */}
-              <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 text-xs shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setMode("by_debt")}
-                  className={`px-3 py-1.5 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                    mode === "by_debt"
-                      ? "bg-card text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title="Agrupa parcelas da mesma compra e quita a compra por completo, eliminando a parcela mensal para sempre"
-                >
-                  <Layers className="size-3.5" />
-                  Por Compra Completa
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("by_transaction")}
-                  className={`px-3 py-1.5 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                    mode === "by_transaction"
-                      ? "bg-card text-foreground shadow-2xs font-semibold"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                  title="Quita os lançamentos/parcelas avulsas menores primeiro para liquidar o maior número de contas"
-                >
-                  <CheckCircle2 className="size-3.5" />
-                  Por Parcela Individual
-                </button>
+            {/* LINHA B: ESCOLHA DO MÊS DE PARTIDA E ESTRATÉGIA */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-3 border-t border-border/60">
+              {/* BLOCO 1: A PARTIR DE QUAL MÊS */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Calendar className="size-3.5 text-primary" />
+                    A partir de qual mês?
+                  </label>
+
+                  {/* Atalho para voltar ao mês atual */}
+                  {(startMonth !== currentCalendarMonth || startYear !== currentCalendarYear) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStartMonth(currentCalendarMonth);
+                        setStartYear(currentCalendarYear);
+                      }}
+                      className="text-[11px] text-primary hover:underline font-medium flex items-center gap-1 transition-colors"
+                    >
+                      <RotateCcw className="size-3" />
+                      Mês Atual ({MONTH_NAMES[currentCalendarMonth].slice(0, 3)}/{currentCalendarYear})
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={String(startMonth)}
+                    onValueChange={(val) => setStartMonth(parseInt(val, 10))}
+                  >
+                    <SelectTrigger className="flex-1 h-9 text-xs font-medium">
+                      <SelectValue placeholder="Selecione o mês" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {MONTH_NAMES.map((name, idx) => (
+                        <SelectItem key={idx} value={String(idx)} className="text-xs">
+                          {name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={String(startYear)}
+                    onValueChange={(val) => setStartYear(parseInt(val, 10))}
+                  >
+                    <SelectTrigger className="w-28 h-9 text-xs font-medium font-mono">
+                      <SelectValue placeholder="Ano" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableYears.map((yr) => (
+                        <SelectItem key={yr} value={String(yr)} className="text-xs font-mono">
+                          {yr}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Seletor de Horizonte Temporal */}
+                <div className="flex items-center gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setScope("from_start_month")}
+                    className={`text-[11px] px-2 py-0.5 rounded transition-all font-medium flex items-center gap-1 ${
+                      scope === "from_start_month"
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <ArrowRight className="size-3" />
+                    Daqui para frente (Recomendado)
+                  </button>
+                  <span className="text-muted-foreground text-[10px]">•</span>
+                  <button
+                    type="button"
+                    onClick={() => setScope("selected_month")}
+                    className={`text-[11px] px-2 py-0.5 rounded transition-all font-medium ${
+                      scope === "selected_month"
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    Apenas em {MONTH_NAMES[startMonth].slice(0, 3)}
+                  </button>
+                </div>
+              </div>
+
+              {/* BLOCO 2: ESTRATÉGIA DE PRIORIZAÇÃO */}
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Layers className="size-3.5 text-primary" />
+                  Estratégia de Priorização
+                </label>
+
+                <div className="grid grid-cols-2 gap-1 rounded-lg border border-border/80 bg-muted/30 p-1 text-xs h-9 items-center">
+                  <button
+                    type="button"
+                    onClick={() => setMode("by_debt")}
+                    className={`h-7 px-2 rounded-md transition-all font-medium flex items-center justify-center gap-1.5 truncate ${
+                      mode === "by_debt"
+                        ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Agrupa parcelas restantes da mesma compra e quita por completo (elimina o valor mensal para sempre)"
+                  >
+                    <Layers className="size-3 shrink-0" />
+                    <span className="truncate">Por Compra Total</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode("by_transaction")}
+                    className={`h-7 px-2 rounded-md transition-all font-medium flex items-center justify-center gap-1.5 truncate ${
+                      mode === "by_transaction"
+                        ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Quita parcelas avulsas menores primeiro para liquidar a maior quantidade de boletos"
+                  >
+                    <CheckCircle2 className="size-3 shrink-0" />
+                    <span className="truncate">Por Parcela Avulsa</span>
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-muted-foreground pt-1">
+                  {mode === "by_debt"
+                    ? "Elimina a dívida completa, liberando o valor mensal nos meses seguintes."
+                    : "Liquida o maior número de contas pontuais a vencer."}
+                </p>
               </div>
             </div>
           </div>
 
-          {/* SEÇÃO 2: OS 4 CARDS DE MÉTRICAS CONSOLIDADAS */}
+          {/* SEÇÃO 2: OS 4 CARDS DE MÉTRICAS */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {/* CARD 1: LANÇAMENTOS QUITADOS */}
+            {/* CARD 1: DÍVIDAS / LANÇAMENTOS QUITADOS */}
             <Card className="border-border/80 bg-card shadow-2xs">
               <CardContent className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
@@ -219,7 +351,7 @@ export function DebtPayoffDialog({
                     de {mode === "by_debt" ? result.totalDebtsCount : result.totalTransactionsCount}
                   </span>
                 </div>
-                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground">
+                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground truncate">
                   {mode === "by_debt" ? (
                     <span>{result.transactionsPaidCount} parcelas eliminadas</span>
                   ) : (
@@ -232,46 +364,46 @@ export function DebtPayoffDialog({
             {/* CARD 2: ALÍVIO MENSAL IMEDIATO */}
             <Card className="border-border/80 bg-card shadow-2xs">
               <CardContent className="p-3.5 space-y-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Libera Mês a Mês
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block truncate">
+                  Libera em {MONTH_NAMES[startMonth].slice(0, 3)}/{startYear}
                 </span>
                 <div className="flex items-baseline gap-1">
                   <span className="text-2xl font-extrabold text-emerald-500 dark:text-emerald-400 font-mono">
                     +{formatCurrency(result.immediateMonthlyRelief)}
                   </span>
                 </div>
-                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground">
-                  <span>No seu orçamento do próximo mês</span>
+                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground truncate">
+                  <span>Alívio no 1º mês</span>
                 </div>
               </CardContent>
             </Card>
 
-            {/* CARD 3: TOTAL UTILIZADO */}
+            {/* CARD 3: ECONOMIA TOTAL FUTURA */}
+            <Card className="border-border/80 bg-card shadow-2xs">
+              <CardContent className="p-3.5 space-y-1">
+                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block truncate">
+                  Total Poupado Futuro
+                </span>
+                <div className="text-2xl font-extrabold text-emerald-600 dark:text-emerald-400 font-mono">
+                  {formatCurrency(result.totalFreedAcrossAllMonths)}
+                </div>
+                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground truncate">
+                  <span>Alívio acumulado futuro</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* CARD 4: TOTAL UTILIZADO / TROCO */}
             <Card className="border-border/80 bg-card shadow-2xs">
               <CardContent className="p-3.5 space-y-1">
                 <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Total Utilizado
+                  Utilizado / Troco
                 </span>
                 <div className="text-2xl font-extrabold text-foreground font-mono">
                   {formatCurrency(result.totalUsed)}
                 </div>
-                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground">
-                  <span>de {formatCurrency(result.availableAmount)} informados</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* CARD 4: TROCO RESTANTE */}
-            <Card className="border-border/80 bg-card shadow-2xs">
-              <CardContent className="p-3.5 space-y-1">
-                <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider block">
-                  Sobra / Troco
-                </span>
-                <div className="text-2xl font-extrabold text-primary font-mono">
-                  {formatCurrency(result.remainingChange)}
-                </div>
-                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground">
-                  <span>Saldo não consumido</span>
+                <div className="pt-1 border-t border-border/50 text-[10px] text-muted-foreground truncate">
+                  <span>Troco: {formatCurrency(result.remainingChange)}</span>
                 </div>
               </CardContent>
             </Card>
@@ -279,7 +411,7 @@ export function DebtPayoffDialog({
 
           {/* BANNER DE PRÓXIMA META (SE HOUVER DÍVIDA QUASE ALCANÇADA) */}
           {result.nextDebtToPay && (
-            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex items-center justify-between text-xs gap-3">
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between text-xs gap-2 sm:gap-3">
               <div className="flex items-center gap-2">
                 <Sparkles className="size-4 text-primary shrink-0" />
                 <p className="text-muted-foreground">
@@ -291,7 +423,7 @@ export function DebtPayoffDialog({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="h-7 text-[11px] shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+                className="h-7 text-[11px] shrink-0 border-primary/30 text-primary hover:bg-primary/10 self-end sm:self-center"
                 onClick={() => handleSetAmount(result.totalUsed + (result.nextDebtToPay?.totalRemaining || 0))}
               >
                 Simular com +{formatCurrency(result.nextDebtToPay.amountNeeded)}
@@ -312,7 +444,7 @@ export function DebtPayoffDialog({
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  Cronograma de Alívio Mês a Mês
+                  Cronograma Mês a Mês ({result.monthlyReliefTimeline.length} meses)
                 </button>
                 <button
                   type="button"
@@ -328,7 +460,7 @@ export function DebtPayoffDialog({
               </div>
 
               <span className="text-[11px] text-muted-foreground hidden sm:inline">
-                {mode === "by_debt" ? "Priorizando compras menores até maiores" : "Priorizando parcelas menores até maiores"}
+                A partir de {result.startMonthLabel} ({scope === "from_start_month" ? "daqui para frente" : "apenas no mês"})
               </span>
             </div>
 
@@ -336,13 +468,13 @@ export function DebtPayoffDialog({
               <div className="space-y-2">
                 {result.monthlyReliefTimeline.length === 0 ? (
                   <div className="py-8 text-center text-xs text-muted-foreground">
-                    Nenhum gasto futuro pendente localizado para compor a linha do tempo.
+                    Nenhum gasto futuro pendente localizado a partir de {result.startMonthLabel}.
                   </div>
                 ) : (
-                  <div className="rounded-xl border border-border/80 overflow-hidden bg-card/60">
+                  <div className="rounded-xl border border-border/80 overflow-hidden bg-card/60 max-h-72 sm:max-h-80 overflow-y-auto">
                     <table className="w-full text-left text-xs">
-                      <thead>
-                        <tr className="border-b border-border/60 bg-muted/30 text-muted-foreground font-medium">
+                      <thead className="sticky top-0 bg-muted/90 backdrop-blur-xs z-10">
+                        <tr className="border-b border-border/60 text-muted-foreground font-medium">
                           <th className="py-2.5 px-3">Mês / Ano</th>
                           <th className="py-2.5 px-3">Gasto Previsto Antes</th>
                           <th className="py-2.5 px-3">Novo Gasto Após Quitar</th>
@@ -352,12 +484,23 @@ export function DebtPayoffDialog({
                       <tbody className="divide-y divide-border/40 font-mono">
                         {result.monthlyReliefTimeline.map((m) => {
                           const hasRelief = m.amountFreed > 0;
+                          const isStartMonth = m.monthKey === result.startMonthKey;
                           return (
-                            <tr key={m.monthKey} className="hover:bg-muted/30 transition-colors">
+                            <tr
+                              key={m.monthKey}
+                              className={`hover:bg-muted/30 transition-colors ${
+                                isStartMonth ? "bg-primary/5 font-semibold" : ""
+                              }`}
+                            >
                               <td className="py-2.5 px-3 font-sans font-medium text-foreground">
                                 <div className="flex items-center gap-1.5">
                                   <Calendar className="size-3.5 text-muted-foreground" />
                                   <span>{m.monthLabel}</span>
+                                  {isStartMonth && (
+                                    <Badge variant="outline" className="text-[9px] py-0 px-1 border-primary/40 bg-primary/10 text-primary">
+                                      Início
+                                    </Badge>
+                                  )}
                                 </div>
                               </td>
                               <td className="py-2.5 px-3 text-muted-foreground">
@@ -384,10 +527,10 @@ export function DebtPayoffDialog({
                 )}
               </div>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-72 sm:max-h-80 overflow-y-auto pr-1">
                 {result.paidDebts.length === 0 ? (
                   <div className="py-8 text-center text-xs text-muted-foreground">
-                    Com o valor informado não foi possível quitar nenhuma pendência integral. Aumente o valor para simular.
+                    Com o valor informado não foi possível quitar nenhuma pendência integral a partir de {result.startMonthLabel}. Aumente o valor para simular.
                   </div>
                 ) : (
                   <div className="space-y-1.5">
@@ -437,7 +580,7 @@ export function DebtPayoffDialog({
                       Pendências Restantes ({result.unpaidDebts.length})
                     </span>
                     <div className="space-y-1.5 opacity-70">
-                      {result.unpaidDebts.slice(0, 5).map((debt) => (
+                      {result.unpaidDebts.slice(0, 6).map((debt) => (
                         <div
                           key={debt.id}
                           className="rounded-lg border border-border/50 bg-muted/20 p-2 flex items-center justify-between text-xs gap-3"
@@ -447,7 +590,7 @@ export function DebtPayoffDialog({
                               {debt.description}
                             </span>
                             <span className="text-[10px] text-muted-foreground">
-                              {debt.installmentsCount > 1 ? `${debt.installmentsCount} parcelas` : "Avulso"}
+                              {debt.installmentsCount > 1 ? `${debt.installmentsCount} parcelas restantes` : "Avulso"}
                             </span>
                           </div>
                           <span className="font-mono text-muted-foreground font-semibold">
@@ -466,7 +609,7 @@ export function DebtPayoffDialog({
         <DialogFooter className="pt-3 border-t border-border/60 flex flex-col sm:flex-row items-center justify-between gap-2">
           <div className="text-xs text-muted-foreground flex items-center gap-1.5 self-start sm:self-center">
             <ShieldCheck className="size-4 text-emerald-500" />
-            <span>Simulação segura com precisão decimal.</span>
+            <span>Simulação a partir de {result.startMonthLabel} com precisão decimal.</span>
           </div>
 
           <div className="flex items-center gap-2 self-end sm:self-auto">
@@ -480,7 +623,7 @@ export function DebtPayoffDialog({
               Fechar
             </Button>
 
-            {/* BOTÃO PARA APLICAR DE VERDADE SE DESEJAR */}
+            {/* BOTÃO PARA EFETIVAR QUITAÇÃO DE FATO */}
             {confirmingApply ? (
               <div className="flex items-center gap-1.5">
                 <Button
