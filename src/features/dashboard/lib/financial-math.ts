@@ -255,3 +255,92 @@ export function calculateDailySpending(
     monthlyRemaining: Math.max(0, monthlyRemainingDec.toNumber()),
   };
 }
+
+export interface CategoryDailySpendingBudget {
+  dailyAmount: number;
+  categoryLimit: number;
+  categorySpent: number;
+  pendingSpent: number;
+  paidSpent: number;
+  remainingBudget: number;
+  daysRemaining: number;
+  totalDaysInMonth: number;
+  currentDay: number;
+  isCurrentMonth: boolean;
+  isPastMonth: boolean;
+  isFutureMonth: boolean;
+  isExceeded: boolean;
+  percentageUsed: number;
+  categoryId: string;
+  categoryName: string;
+}
+
+export function calculateCategoryDailySpending(
+  categoryLimit: number,
+  categorySpent: number,
+  selectedMonth: number,
+  selectedYear: number,
+  categoryId = "lazer_outros",
+  categoryName = "Lazer/Outros",
+  pendingSpent = 0,
+  referenceDate: Date = new Date()
+): CategoryDailySpendingBudget {
+  const limitDec = toDecimal(categoryLimit);
+  const spentDec = toDecimal(categorySpent);
+  const remainingDec = limitDec.minus(spentDec);
+
+  const totalDaysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+  const currentRealYear = referenceDate.getFullYear();
+  const currentRealMonth = referenceDate.getMonth();
+  const currentRealDay = referenceDate.getDate();
+
+  const isCurrentMonth = selectedYear === currentRealYear && selectedMonth === currentRealMonth;
+  const isPastMonth =
+    selectedYear < currentRealYear ||
+    (selectedYear === currentRealYear && selectedMonth < currentRealMonth);
+  const isFutureMonth =
+    selectedYear > currentRealYear ||
+    (selectedYear === currentRealYear && selectedMonth > currentRealMonth);
+
+  let daysRemaining = totalDaysInMonth;
+  if (isCurrentMonth) {
+    daysRemaining = Math.max(1, totalDaysInMonth - currentRealDay + 1);
+  } else if (isPastMonth) {
+    daysRemaining = 0;
+  }
+
+  const isExceeded = spentDec.greaterThan(limitDec) || remainingDec.isNegative();
+
+  const dailyAmountDec =
+    !isExceeded && daysRemaining > 0 && remainingDec.greaterThan(0)
+      ? remainingDec.dividedBy(daysRemaining).toDecimalPlaces(2)
+      : new Decimal(0);
+
+  const percentageUsed = limitDec.greaterThan(0)
+    ? spentDec.dividedBy(limitDec).times(100).toDecimalPlaces(1).toNumber()
+    : spentDec.greaterThan(0)
+    ? 100
+    : 0;
+
+  const paidSpent = Math.max(0, spentDec.minus(toDecimal(pendingSpent)).toNumber());
+
+  return {
+    dailyAmount: dailyAmountDec.toNumber(),
+    categoryLimit: limitDec.toNumber(),
+    categorySpent: spentDec.toNumber(),
+    pendingSpent,
+    paidSpent,
+    remainingBudget: Math.max(0, remainingDec.toNumber()),
+    daysRemaining,
+    totalDaysInMonth,
+    currentDay: isCurrentMonth ? currentRealDay : isPastMonth ? totalDaysInMonth : 1,
+    isCurrentMonth,
+    isPastMonth,
+    isFutureMonth,
+    isExceeded,
+    percentageUsed: Math.min(100, Math.max(0, percentageUsed)),
+    categoryId,
+    categoryName,
+  };
+}
+
