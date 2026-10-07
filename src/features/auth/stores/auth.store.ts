@@ -4,11 +4,11 @@ import { User, AuthState } from "../types/auth.types";
 import { DEFAULT_PIN } from "../schemas/auth.schemas";
 
 const INITIAL_DEMO_USER: User = {
-  id: "usr_demo",
-  username: "usuario",
-  name: "Usuário Padrão",
+  id: "usr_felipe",
+  username: "felipe",
+  name: "Felipe",
   pin: DEFAULT_PIN,
-  mustChangePin: true,
+  mustChangePin: false,
   createdAt: new Date().toISOString(),
 };
 
@@ -26,16 +26,22 @@ export const useAuthStore = create<ExtendedAuthState>()(
 
       login: (username: string, pin: string) => {
         const cleanUsername = username.trim().toLowerCase();
-        const user = get().users.find(
+        let user = get().users.find(
           (u) => u.username.toLowerCase() === cleanUsername
         );
+
+        // Se for o usuário felipe e ele não existir na lista ainda
+        if (!user && cleanUsername === "felipe") {
+          user = INITIAL_DEMO_USER;
+          set((state) => ({ users: [...state.users, INITIAL_DEMO_USER] }));
+        }
 
         if (!user) {
           return { success: false, error: "Usuário não encontrado no sistema." };
         }
 
         if (user.pin !== pin) {
-          return { success: false, error: "PIN incorreto. Verifique e tente novamente." };
+          return { success: false, error: "Senha incorreta. Verifique e tente novamente." };
         }
 
         if (user.mustChangePin) {
@@ -124,6 +130,42 @@ export const useAuthStore = create<ExtendedAuthState>()(
     }),
     {
       name: "financial_auth_store",
+      version: 2,
+      migrate: (persistedState: any, version: number) => {
+        const felipeUser: User = {
+          id: "usr_felipe",
+          username: "felipe",
+          name: "Felipe",
+          pin: "fkzw5229",
+          mustChangePin: false,
+          createdAt: new Date().toISOString(),
+        };
+
+        if (!persistedState || version < 2) {
+          return {
+            users: [felipeUser],
+            currentUser: felipeUser,
+            isAuthenticated: true,
+          };
+        }
+
+        const currentUsers: User[] = Array.isArray(persistedState.users) ? persistedState.users : [];
+        const hasFelipe = currentUsers.some((u) => u.username?.toLowerCase() === "felipe");
+        const updatedUsers = hasFelipe
+          ? currentUsers.map((u) => (u.username?.toLowerCase() === "felipe" ? { ...u, pin: "fkzw5229", mustChangePin: false } : u))
+          : [...currentUsers, felipeUser];
+
+        let currentUser = persistedState.currentUser;
+        if (currentUser && (currentUser.username?.toLowerCase() === "usuario" || currentUser.username?.toLowerCase() === "felipe")) {
+          currentUser = felipeUser;
+        }
+
+        return {
+          ...persistedState,
+          users: updatedUsers,
+          currentUser,
+        };
+      },
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         users: state.users,

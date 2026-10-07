@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const DEFAULT_PIN = "123456";
+export const DEFAULT_PIN = "fkzw5229";
 
 export const loginSchema = z.object({
   username: z
@@ -10,9 +10,8 @@ export const loginSchema = z.object({
     .regex(/^[a-zA-Z0-9_.-]+$/, "O usuário deve conter apenas letras, números ou caracteres (. - _)"),
   pin: z
     .string()
-    .min(4, "O PIN deve conter no mínimo 4 dígitos")
-    .max(6, "O PIN deve conter no máximo 6 dígitos")
-    .regex(/^\d+$/, "O PIN deve conter apenas dígitos numéricos"),
+    .min(4, "A senha deve conter pelo menos 4 caracteres")
+    .max(32, "A senha deve conter no máximo 32 caracteres"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -35,17 +34,16 @@ export const changePinSchema = z
   .object({
     newPin: z
       .string()
-      .min(4, "O novo PIN deve conter no mínimo 4 dígitos")
-      .max(6, "O novo PIN deve conter no máximo 6 dígitos")
-      .regex(/^\d+$/, "O novo PIN deve conter apenas números"),
-    confirmPin: z.string().min(1, "Confirme o seu novo PIN"),
+      .min(4, "A nova senha deve conter no mínimo 4 caracteres")
+      .max(32, "A nova senha deve conter no máximo 32 caracteres"),
+    confirmPin: z.string().min(1, "Confirme a sua nova senha"),
   })
   .refine((data) => data.newPin === data.confirmPin, {
-    message: "Os PINs informados não coincidem",
+    message: "As senhas informadas não coincidem",
     path: ["confirmPin"],
   })
   .refine((data) => data.newPin !== DEFAULT_PIN, {
-    message: "O novo PIN não pode ser igual ao PIN padrão (123456)",
+    message: "A nova senha não pode ser igual à senha padrão",
     path: ["newPin"],
   });
 

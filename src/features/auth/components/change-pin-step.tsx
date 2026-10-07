@@ -78,20 +78,18 @@ export function ChangePinStep({ onSuccess }: ChangePinStepProps) {
         </p>
       </div>
 
-      <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-        <span className="font-semibold text-foreground">Aviso de Segurança:</span> O PIN deve possuir entre 4 e 6 números e não pode ser igual ao PIN temporário (<code className="rounded bg-muted px-1 py-0.5">{DEFAULT_PIN}</code>).
+      <div className="rounded-xl border border-border/70 bg-muted/30 p-3 text-xs text-muted-foreground">
+        <span className="font-semibold text-foreground">Aviso de Segurança:</span> A nova senha deve possuir no mínimo 4 caracteres e não pode ser igual à senha temporária (<code className="rounded bg-muted px-1.5 py-0.5 font-mono">{DEFAULT_PIN}</code>).
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="newPin">Novo PIN Numérico</Label>
+          <Label htmlFor="newPin">Nova Senha</Label>
           <div className="relative">
             <Input
               id="newPin"
               type={showNewPin ? "text" : "password"}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Digite de 4 a 6 dígitos"
+              placeholder="Digite a nova senha"
               className="pr-10"
               {...register("newPin")}
             />
@@ -110,14 +108,12 @@ export function ChangePinStep({ onSuccess }: ChangePinStepProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPin">Confirme o Novo PIN</Label>
+          <Label htmlFor="confirmPin">Confirme a Nova Senha</Label>
           <div className="relative">
             <Input
               id="confirmPin"
               type={showConfirmPin ? "text" : "password"}
-              inputMode="numeric"
-              maxLength={6}
-              placeholder="Repita o novo PIN"
+              placeholder="Repita a nova senha"
               className="pr-10"
               {...register("confirmPin")}
             />

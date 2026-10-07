@@ -54,7 +54,7 @@ export function AuthCard({ onAuthenticated }: AuthCardProps) {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: "usuario",
+      username: "felipe",
       pin: DEFAULT_PIN,
     },
   });
@@ -186,7 +186,7 @@ export function AuthCard({ onAuthenticated }: AuthCardProps) {
                           id="login-username"
                           type="text"
                           autoComplete="username"
-                          placeholder="ex: usuario"
+                          placeholder="ex: felipe"
                           className="pl-9"
                           {...registerLogin("username")}
                         />
@@ -201,19 +201,18 @@ export function AuthCard({ onAuthenticated }: AuthCardProps) {
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <Label htmlFor="login-pin">PIN de Segurança</Label>
+                        <Label htmlFor="login-pin">Senha de Acesso</Label>
                         <span className="text-[11px] text-muted-foreground">
-                          4 a 6 dígitos
+                          Mínimo 4 caracteres
                         </span>
                       </div>
                       <div className="relative">
                         <Input
                           id="login-pin"
                           type={showPin ? "text" : "password"}
-                          inputMode="numeric"
-                          maxLength={6}
-                          placeholder="••••••"
-                          className="pl-9 pr-10 tracking-widest"
+                          autoComplete="current-password"
+                          placeholder="••••••••"
+                          className="pl-9 pr-10"
                           {...registerLogin("pin")}
                         />
                         <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -222,7 +221,7 @@ export function AuthCard({ onAuthenticated }: AuthCardProps) {
                           onClick={() => setShowPin(!showPin)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                           tabIndex={-1}
-                          aria-label={showPin ? "Ocultar PIN" : "Mostrar PIN"}
+                          aria-label={showPin ? "Ocultar Senha" : "Mostrar Senha"}
                         >
                           {showPin ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         </button>
@@ -232,10 +231,10 @@ export function AuthCard({ onAuthenticated }: AuthCardProps) {
                       )}
                     </div>
 
-                    <div className="rounded-md border border-border bg-muted/40 p-2.5 text-[11px] text-muted-foreground">
-                      <span className="font-semibold text-foreground">Credencial Padrão:</span>{" "}
-                      usuário: <code className="rounded bg-muted px-1 py-0.5">usuario</code> | PIN:{" "}
-                      <code className="rounded bg-muted px-1 py-0.5">{DEFAULT_PIN}</code>
+                    <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 text-[11px] text-muted-foreground">
+                      <span className="font-semibold text-foreground">Credencial de Acesso:</span>{" "}
+                      usuário: <code className="rounded bg-muted px-1.5 py-0.5 font-mono">felipe</code> | Senha:{" "}
+                      <code className="rounded bg-muted px-1.5 py-0.5 font-mono">{DEFAULT_PIN}</code>
                     </div>
 
                     <Button type="submit" className="w-full" disabled={isLoading}>
