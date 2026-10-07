@@ -18,11 +18,11 @@ interface MonthlyTableProps {
 
 export function MonthlyTable({ months, year, selectedMonth, onSelectMonth, onOpenReportDialog }: MonthlyTableProps) {
   return (
-    <Card className="border-border bg-card">
+    <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-semibold text-foreground">
+            <CardTitle className="text-base font-bold tracking-tight text-foreground">
               Detalhamento Mês a Mês ({year})
             </CardTitle>
             <CardDescription className="text-xs text-muted-foreground mt-0.5">
@@ -36,7 +36,7 @@ export function MonthlyTable({ months, year, selectedMonth, onSelectMonth, onOpe
               variant="outline"
               size="sm"
               onClick={onOpenReportDialog}
-              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 self-start sm:self-auto shrink-0"
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground h-8 rounded-lg border-border/80 shadow-2xs self-start sm:self-auto shrink-0 transition-colors"
               title="Emitir Relatório em PDF com todos os meses e lançamentos"
             >
               <FileText className="size-3.5 text-blue-500" />

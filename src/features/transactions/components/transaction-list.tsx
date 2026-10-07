@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -80,43 +81,32 @@ export function TransactionList({
   };
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+            <CardTitle className="text-base font-bold tracking-tight text-foreground flex items-center gap-2">
               <Receipt className="size-4 text-primary" />
               Lançamentos de {monthName}
             </CardTitle>
-            <CardDescription className="text-xs text-muted-foreground">
+            <CardDescription className="text-xs text-muted-foreground mt-0.5">
               {transactions.length} lançamentos registrados em {monthName} de {year}
             </CardDescription>
           </div>
 
-          {/* FILTROS RÁPIDOS */}
-          <div className="flex items-center gap-1.5 self-start sm:self-auto">
-            {(
-              [
-                { id: "all", label: "Todos" },
-                { id: "expense", label: "Gastos" },
-                { id: "income", label: "Receitas" },
-                { id: "pending", label: "A Vencer" },
-              ] as const
-            ).map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilterType(f.id)}
-                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-all ${
-                  filterType === f.id
-                    ? "bg-primary text-primary-foreground shadow-xs font-semibold"
-                    : "bg-muted/60 text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
+          {/* FILTROS RÁPIDOS COM SEGMENTED CONTROL */}
+          <SegmentedControl
+            value={filterType}
+            onChange={setFilterType}
+            size="sm"
+            className="self-start sm:self-auto shrink-0"
+            options={[
+              { value: "all", label: "Todos" },
+              { value: "expense", label: "Gastos" },
+              { value: "income", label: "Receitas" },
+              { value: "pending", label: "A Vencer" },
+            ]}
+          />
         </div>
 
         {/* CAMPO DE BUSCA */}
@@ -126,7 +116,7 @@ export function TransactionList({
             placeholder="Buscar por descrição ou categoria..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-8 text-xs h-8 bg-muted/40"
+            className="pl-8 text-xs h-8 bg-muted/30 border-border/60 rounded-xl"
           />
           <Search className="size-3.5 absolute left-2.5 top-4 text-muted-foreground" />
         </div>

@@ -203,16 +203,16 @@ export function BudgetSummaryHeader({
       {/* CARDS DE KPIS CONSOLIDADOS DO ORÇAMENTO */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {/* TETO TOTAL ORÇADO */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 space-y-2">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 space-y-2.5">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">Teto Total Orçado</span>
-              <div className="rounded-md bg-primary/10 p-1.5 text-primary">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Teto Total Orçado</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-inset ring-primary/20 group-hover:scale-105 transition-transform duration-200">
                 <Target className="size-4" />
               </div>
             </div>
             <div>
-              <div className="text-xl font-bold tracking-tight text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
                 {formatCurrency(summary.totalBudget)}
               </div>
               <span className="text-[11px] text-muted-foreground">
@@ -223,16 +223,16 @@ export function BudgetSummaryHeader({
         </Card>
 
         {/* TOTAL GASTO NO MÊS */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 space-y-2">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 space-y-2.5">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">Total Gasto no Mês</span>
-              <div className="rounded-md bg-rose-500/10 p-1.5 text-rose-500">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Total Gasto no Mês</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20 group-hover:scale-105 transition-transform duration-200">
                 <ArrowDownRight className="size-4" />
               </div>
             </div>
             <div>
-              <div className="text-xl font-bold tracking-tight text-foreground">
+              <div className="text-xl sm:text-2xl font-bold tracking-tight text-rose-600 dark:text-rose-400 font-mono">
                 {formatCurrency(summary.totalSpent)}
               </div>
               <span className="text-[11px] text-muted-foreground">
@@ -243,17 +243,17 @@ export function BudgetSummaryHeader({
         </Card>
 
         {/* SALDO RESTANTE DO ORÇAMENTO */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 space-y-2">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 space-y-2.5">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 {summary.remainingBudget >= 0 ? "Saldo Restante" : "Orçamento Excedido"}
               </span>
               <div
-                className={`rounded-md p-1.5 ${
+                className={`flex size-9 items-center justify-center rounded-xl ring-1 ring-inset group-hover:scale-105 transition-transform duration-200 ${
                   summary.remainingBudget >= 0
-                    ? "bg-emerald-500/10 text-emerald-500"
-                    : "bg-rose-500/10 text-rose-500"
+                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-emerald-500/20"
+                    : "bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-rose-500/20"
                 }`}
               >
                 <Wallet className="size-4" />
@@ -261,7 +261,7 @@ export function BudgetSummaryHeader({
             </div>
             <div>
               <div
-                className={`text-xl font-bold tracking-tight ${
+                className={`text-xl sm:text-2xl font-bold tracking-tight font-mono ${
                   summary.remainingBudget >= 0
                     ? "text-emerald-600 dark:text-emerald-400"
                     : "text-rose-600 dark:text-rose-400"
@@ -281,22 +281,22 @@ export function BudgetSummaryHeader({
         </Card>
 
         {/* % COMPROMETIMENTO GERAL */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 space-y-2">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 space-y-2.5">
             <div className="flex items-center justify-between text-muted-foreground">
-              <span className="text-xs font-medium">% Comprometido</span>
-              <div className="rounded-md bg-blue-500/10 p-1.5 text-blue-500">
+              <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">% Comprometido</span>
+              <div className="flex size-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-inset ring-blue-500/20 group-hover:scale-105 transition-transform duration-200">
                 <PieChart className="size-4" />
               </div>
             </div>
             <div>
               <div className="flex items-baseline gap-2">
-                <span className="text-xl font-bold tracking-tight text-foreground">
+                <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground font-mono">
                   {summary.percentage.toFixed(1)}%
                 </span>
                 <Badge
                   variant="outline"
-                  className={`text-[10px] font-medium px-1.5 py-0.2 ${statusBadge.variant}`}
+                  className={`text-[10px] font-medium px-2 py-0.5 rounded-full border-0 ${statusBadge.variant}`}
                 >
                   <StatusIcon className="size-2.5 mr-1" />
                   {statusBadge.label}
@@ -315,7 +315,7 @@ export function BudgetSummaryHeader({
       </div>
 
       {/* BARRA GLOBAL DE CONSUMO DO ORÇAMENTO */}
-      <Card className="border-border bg-card/60 backdrop-blur-xs">
+      <Card className="rounded-2xl border-border/70 bg-card/60 backdrop-blur-xs shadow-xs">
         <CardContent className="p-4 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-foreground flex items-center gap-2">

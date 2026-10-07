@@ -16,6 +16,7 @@ import {
 import { MonthData } from "../types/dashboard.types";
 import { formatCurrency } from "../lib/financial-math";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { TrendingUp, BarChart3, Wallet } from "lucide-react";
 
 interface MonthlyChartProps {
@@ -149,7 +150,7 @@ export function MonthlyChart({ months, year, selectedMonth, onSelectMonth }: Mon
   }
 
   return (
-    <Card className="border-border bg-card shadow-xs">
+    <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -162,49 +163,32 @@ export function MonthlyChart({ months, year, selectedMonth, onSelectMonth }: Mon
           </div>
 
           {/* ALTERNADOR DE VISUALIZAÇÃO DO GRÁFICO */}
-          <div className="flex items-center rounded-lg border border-border/80 bg-muted/40 p-0.5 text-xs self-start sm:self-auto shrink-0 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setChartMode("combo")}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                chartMode === "combo"
-                  ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Exibe Receitas e Gastos em barras com a evolução do Patrimônio em linha contínua"
-            >
-              <TrendingUp className="size-3.5 text-blue-500" />
-              <span>Barras + Linha</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setChartMode("bars")}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                chartMode === "bars"
-                  ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Exibe Receitas, Gastos e Patrimônio lado a lado em 3 barras"
-            >
-              <BarChart3 className="size-3.5 text-emerald-500" />
-              <span>3 Barras</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setChartMode("patrimony")}
-              className={`px-2.5 py-1 rounded-md transition-all font-medium flex items-center gap-1.5 ${
-                chartMode === "patrimony"
-                  ? "bg-card text-foreground shadow-2xs font-semibold border border-border/60"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              title="Foco exclusivo na evolução acumulada do Patrimônio Líquido"
-            >
-              <Wallet className="size-3.5 text-blue-500" />
-              <span>Só Patrimônio</span>
-            </button>
-          </div>
+          <SegmentedControl
+            value={chartMode}
+            onChange={setChartMode}
+            size="sm"
+            className="self-start sm:self-auto shrink-0"
+            options={[
+              {
+                value: "combo",
+                label: "Barras + Linha",
+                icon: <TrendingUp className="size-3.5 text-blue-500" />,
+                title: "Exibe Receitas e Gastos em barras com a evolução do Patrimônio em linha contínua",
+              },
+              {
+                value: "bars",
+                label: "3 Barras",
+                icon: <BarChart3 className="size-3.5 text-emerald-500" />,
+                title: "Exibe Receitas, Gastos e Patrimônio lado a lado em 3 barras",
+              },
+              {
+                value: "patrimony",
+                label: "Só Patrimônio",
+                icon: <Wallet className="size-3.5 text-blue-500" />,
+                title: "Foco exclusivo na evolução acumulada do Patrimônio Líquido",
+              },
+            ]}
+          />
         </div>
       </CardHeader>
 

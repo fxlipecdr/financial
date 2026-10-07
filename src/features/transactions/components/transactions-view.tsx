@@ -225,59 +225,59 @@ export function TransactionsView() {
       {/* 3 CARDS DE RESUMO DO MÊS */}
       <div className="grid gap-3 sm:grid-cols-3">
         {/* RECEITAS DO MÊS */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Receitas ({monthName})
               </p>
-              <p className="text-xl font-bold text-foreground font-mono mt-0.5">
+              <p className="text-xl sm:text-2xl font-bold text-foreground font-mono mt-1">
                 {formatCurrency(summary.totalIncome)}
               </p>
             </div>
-            <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ring-1 ring-inset ring-emerald-500/20 group-hover:scale-105 transition-transform duration-200">
               <TrendingUp className="size-4" />
             </div>
           </CardContent>
         </Card>
 
         {/* GASTOS DO MÊS */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Gastos ({monthName})
               </p>
-              <p className="text-xl font-bold text-foreground font-mono mt-0.5">
+              <p className="text-xl sm:text-2xl font-bold text-rose-600 dark:text-rose-400 font-mono mt-1">
                 {formatCurrency(summary.totalExpenses)}
               </p>
             </div>
-            <div className="flex size-9 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+            <div className="flex size-9 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-1 ring-inset ring-rose-500/20 group-hover:scale-105 transition-transform duration-200">
               <TrendingDown className="size-4" />
             </div>
           </CardContent>
         </Card>
 
         {/* SALDO LÍQUIDO */}
-        <Card className="border-border bg-card">
-          <CardContent className="p-4 flex items-center justify-between">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                 Saldo do Mês
               </p>
               <p
-                className={`text-xl font-bold font-mono mt-0.5 ${
-                  isPositiveBalance ? "text-primary" : "text-destructive"
+                className={`text-xl sm:text-2xl font-bold font-mono mt-1 ${
+                  isPositiveBalance ? "text-foreground" : "text-destructive"
                 }`}
               >
                 {formatCurrency(summary.balance)}
               </p>
             </div>
             <div
-              className={`flex size-9 items-center justify-center rounded-lg ${
+              className={`flex size-9 items-center justify-center rounded-xl ring-1 ring-inset group-hover:scale-105 transition-transform duration-200 ${
                 isPositiveBalance
-                  ? "bg-primary/10 text-primary"
-                  : "bg-destructive/10 text-destructive"
+                  ? "bg-primary/10 text-primary ring-primary/20"
+                  : "bg-destructive/10 text-destructive ring-destructive/20"
               }`}
             >
               <Wallet className="size-4" />

@@ -58,7 +58,7 @@ export function BudgetCategoryCard({ item, onEdit }: BudgetCategoryCardProps) {
   const progressWidth = Math.min(Math.max(item.percentage, 0), 100);
 
   return (
-    <Card className="overflow-hidden border-border bg-card transition-all hover:shadow-md hover:border-primary/30">
+    <Card className="overflow-hidden rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs transition-all hover:shadow-xs hover:border-primary/40">
       <CardContent className="p-4 space-y-3.5">
         {/* CABEÇALHO DO CARD: ÍCONE, NOME E BOTÃO EDITAR */}
         <div className="flex items-center justify-between gap-2">

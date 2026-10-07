@@ -21,6 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { useTransactionStore } from "@/features/transactions/stores/transaction.store";
 import { useCategoryStore } from "@/features/categories/stores/category.store";
 import { useBudgetStore } from "@/features/budget/stores/budget.store";
@@ -185,42 +186,28 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
           </p>
         </div>
 
-        {/* NAVEGAÇÃO DE SUB-ABAS */}
-        <div className="flex items-center rounded-lg border border-border bg-muted/60 p-1 self-start sm:self-auto flex-wrap gap-1">
-          {[
-            { id: "cortes", label: "Onde Cortar Gastos", icon: Scissors },
-            { id: "dinheiro", label: "O que Fazer com o Dinheiro", icon: PiggyBank },
-            { id: "simulador", label: "Posso Comprar?", icon: Zap },
-            { id: "chat", label: "Chat com IA", icon: Bot },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const isActive = activeSubTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setActiveSubTab(tab.id as any)}
-                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
-                  isActive
-                    ? "bg-card text-foreground shadow-xs font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="size-3.5" />
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
+        {/* NAVEGAÇÃO DE SUB-ABAS COM SEGMENTED CONTROL */}
+        <SegmentedControl
+          value={activeSubTab}
+          onChange={(val) => setActiveSubTab(val as any)}
+          size="sm"
+          className="self-start sm:self-auto shrink-0"
+          options={[
+            { value: "cortes", label: "Onde Cortar Gastos", icon: <Scissors className="size-3.5" /> },
+            { value: "dinheiro", label: "O que Fazer com o Dinheiro", icon: <PiggyBank className="size-3.5" /> },
+            { value: "simulador", label: "Posso Comprar?", icon: <Zap className="size-3.5" /> },
+            { value: "chat", label: "Chat com IA", icon: <Bot className="size-3.5" /> },
+          ]}
+        />
       </div>
 
       {/* PAINEL DE METRICAS E SCORE PRINCIPAL */}
       <div className="grid gap-3 sm:grid-cols-4">
         {/* SCORE DE SAÚDE */}
-        <Card className="border-border bg-card sm:col-span-1">
-          <CardContent className="p-4 flex flex-col justify-between h-full">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs sm:col-span-1 group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Score de Saúde</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Score de Saúde</p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-3xl font-black font-mono" style={{ color: report.healthScore.color }}>
                   {report.healthScore.score}
@@ -228,7 +215,7 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
                 <span className="text-xs text-muted-foreground font-medium">/ 100</span>
                 <Badge
                   variant="outline"
-                  className="text-[10px] font-semibold uppercase"
+                  className="text-[10px] font-semibold uppercase rounded-full px-2"
                   style={{
                     borderColor: `${report.healthScore.color}40`,
                     backgroundColor: `${report.healthScore.color}15`,
@@ -239,32 +226,32 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
                 </Badge>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border pt-2 leading-relaxed">
+            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border/50 pt-2 leading-relaxed">
               {report.healthScore.summary}
             </p>
           </CardContent>
         </Card>
 
         {/* ECONOMIA POTENCIAL */}
-        <Card className="border-border bg-card sm:col-span-1">
-          <CardContent className="p-4 flex flex-col justify-between h-full">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs sm:col-span-1 group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Economia Potencial</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Economia Potencial</p>
               <p className="text-2xl font-bold font-mono text-primary mt-1">
                 {formatCurrency(totalPotentialSavings)}
               </p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border pt-2">
+            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border/50 pt-2">
               +{formatCurrency(totalPotentialSavings / 30)}/dia seguro no seu orçamento se aplicar os cortes.
             </p>
           </CardContent>
         </Card>
 
         {/* REGRA 50/30/20 */}
-        <Card className="border-border bg-card sm:col-span-1">
-          <CardContent className="p-4 flex flex-col justify-between h-full">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs sm:col-span-1 group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Distribuição 50/30/20</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Distribuição 50/30/20</p>
               <div className="flex items-center gap-2 mt-1 font-mono text-xs font-semibold">
                 <span className="text-blue-500">{report.rule503020.needsPercent}% Fixos</span>
                 <span>•</span>
@@ -273,22 +260,22 @@ Para diminuir despesas com eficácia, foque nas categorias com maior volume de g
                 <span className="text-emerald-500">{report.rule503020.savingsPercent}% Sobra</span>
               </div>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border pt-2 truncate">
+            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border/50 pt-2 truncate">
               {report.rule503020.status === "balanced" ? "Distribuição exemplar" : "Despesas exigem atenção"}
             </p>
           </CardContent>
         </Card>
 
         {/* RESERVA DE EMERGÊNCIA */}
-        <Card className="border-border bg-card sm:col-span-1">
-          <CardContent className="p-4 flex flex-col justify-between h-full">
+        <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs sm:col-span-1 group hover:border-border transition-all duration-200">
+          <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Meta de Reserva (6M)</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Meta de Reserva (6M)</p>
               <p className="text-2xl font-bold font-mono text-foreground mt-1">
                 {formatCurrency(report.emergencyFund.target6Months)}
               </p>
             </div>
-            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border pt-2">
+            <p className="text-[11px] text-muted-foreground mt-2 border-t border-border/50 pt-2">
               Baseado em gastos essenciais de {formatCurrency(report.emergencyFund.monthlyBurnRate)}/mês.
             </p>
           </CardContent>

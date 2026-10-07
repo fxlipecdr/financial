@@ -73,7 +73,7 @@ export function ExpensesPieChart({
 
   if (!mounted) {
     return (
-      <Card className="border-border bg-card">
+      <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
         <CardHeader>
           <CardTitle className="text-base font-semibold">Distribuição de Gastos</CardTitle>
           <CardDescription className="text-xs">Carregando gráfico...</CardDescription>
@@ -87,7 +87,7 @@ export function ExpensesPieChart({
 
   if (categoryExpenses.length === 0) {
     return (
-      <Card className="border-border bg-card">
+      <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <PieIcon className="size-4 text-primary" />
@@ -111,7 +111,7 @@ export function ExpensesPieChart({
   }
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="rounded-2xl border-border/70 bg-card/80 backdrop-blur-xs shadow-xs">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold flex items-center gap-2 text-foreground">
           <PieIcon className="size-4 text-primary" />
